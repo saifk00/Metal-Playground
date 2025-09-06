@@ -17,3 +17,17 @@ kernel void add_arrays(device long* A [[buffer(0)]],
     
     C[gid] = B[gid] + A[gid];
 }
+
+vertex float4 vertex_shader(uint vertexID [[vertex_id]],
+                           constant simd::float3* vertexPositions) {
+    float4 vertexOutPositions = float4(vertexPositions[vertexID][0],
+                                       vertexPositions[vertexID][1],
+                                       vertexPositions[vertexID][2],
+                                       1.0f);
+    return vertexOutPositions;
+}
+ 
+
+fragment uint4 fragment_shader() {
+    return uint4(0, 255, 0, 255);
+}
