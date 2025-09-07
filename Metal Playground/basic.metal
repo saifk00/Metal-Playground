@@ -24,13 +24,12 @@ struct VertexInput {
 };
 
 vertex float4 vertex_shader(VertexInput vIn [[ stage_in ]]) {
-    float phase = 2 * M_PI_F * (vIn.time / 100.0f);
-    float u = 0.5f * (1 + sin(phase)); // in [0, 1]
-    
-    // breathe from 0.2 to 10
-    float wMin = 0.2;
-    float wMax = 1.0;
-    float wScale = wMin + u * (wMax - wMin);
+    float phase = M_PI_F * (vIn.time / 180.0f);
+    // breathe from 0.2 to 1.0
+    float wMin = 0.5;
+    float wMax = 8;
+    float wMid = (wMin + wMax) / 2.0;
+    float wScale = wMid + (wMax - wMid)*sin(phase);
     
     float4 vOut = float4(vIn.position[0],
                                        vIn.position[1],

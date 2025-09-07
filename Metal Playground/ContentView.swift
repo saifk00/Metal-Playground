@@ -9,18 +9,22 @@ import SwiftUI
 import simd
 
 struct ContentView: View {
-    let del: MetalRenderDemo
-    @State private var time: Int = 0
+    @State private var speed = 180.0
+    let demo: MetalRenderDemo
     init() {
-        del = try! MetalRenderDemo()
+        demo = try! MetalRenderDemo()
     }
     
     var body: some View {
-        VStack {
-            let image = del.renderImage(at: 50)!
-            Image(image, scale: 1.0, label: Text("Hello triangle!"))
+        TimelineView(.periodic(from:.now, by: 1.0 / 360.0)) {ctx in
+            VStack {
+                let step = Int(speed * ctx.date.timeIntervalSinceReferenceDate)
+                let image = demo.renderImage(at: step)!
+                Slider(value: $speed, in: 60...360)
+                Image(image, scale: 1.0, label: Text("Hello triangle!"))
+            }
+            .padding()
         }
-        .padding()
     }
 }
 
@@ -116,7 +120,7 @@ struct MetalRenderDemo {
     
     func render(at time: Int) {
         // 1. do the drawing
-        let wrappedTime = time % (maxT + 1)
+        let wrappedTime = time % tResolution
         if let buf = queue.makeCommandBuffer() {
             let encoder = buf.makeRenderCommandEncoder(
                 descriptor: MetalRenderDemo.makePassDescriptor(for: device, with: texture))!
@@ -187,7 +191,7 @@ struct MetalRenderDemo {
     let pipeline: MTLRenderPipelineState
     let texture: MTLTexture
     let vertexBuffer: MTLBuffer
-    let maxT: Int = 100
+    let tResolution: Int = 360
     
     init() throws {
         device = MTLCreateSystemDefaultDevice()!
@@ -200,7 +204,7 @@ struct MetalRenderDemo {
         texture = MetalRenderDemo.makeTexture(for: device)
         
         // vertices - what to draw
-        let times = Array(0...maxT)
+        let times = Array(0...tResolution)
         let vertices: [MyVertex] = times.flatMap { t in
             MetalRenderDemo.makeVerticesForTriangle(at: t)
         }
