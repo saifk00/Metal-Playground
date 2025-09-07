@@ -9,33 +9,61 @@ import SwiftUI
 import simd
 
 struct ContentView: View {
-    let del: MetalRenderDemo?
+    let del: MetalRenderDemo
+    @State private var time: Int = 0
     init() {
-        do {
-            del = try MetalRenderDemo()
-        } catch {
-            print("failed to make demo")
-            del = nil
-        }
+        del = try! MetalRenderDemo()
     }
     
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-            let image = del!.getCGImage()!
+            let image = del.renderImage(at: 50)!
             Image(image, scale: 1.0, label: Text("Hello triangle!"))
         }
         .padding()
     }
 }
 
-struct MetalRenderDemo {
-    var texture: MTLTexture? = nil
+struct MyVertex {
+    let time: Float
+    let position: SIMD3<Float>
     
-    func makePipeline(for device: MTLDevice) -> MTLRenderPipelineDescriptor {
+    static func vertexDescriptor() -> MTLVertexDescriptor {
+        let descriptor = MTLVertexDescriptor()
+        
+        // notice that we directly subscript attributes rather than
+        // initialize the list ourselves. this is because
+        // metal defines a fixed max length of these arrays
+        // and initializes them for us. so we modify them in place
+        if let timeD = descriptor.attributes[0] {
+            timeD.format = .float
+            // the backslash is swift's "key path literal" syntax
+            timeD.offset = MemoryLayout.offset(of: \MyVertex.time)!
+            // notice that we have an option to interleave
+            // attributes _across buffers_ (but why?)
+            timeD.bufferIndex = 0
+        }
+        
+        if let posD = descriptor.attributes[1] {
+            posD.format = .float3
+            posD.offset = MemoryLayout.offset(of: \MyVertex.position)!
+            posD.bufferIndex = 0
+        }
+        
+        if let buf0Layout = descriptor.layouts[0] {
+            buf0Layout.stepFunction = .perVertex
+            buf0Layout.stride = MemoryLayout<MyVertex>.stride
+            // meaningless since stepFunction is pervertex,
+            // but set it anyway for explicitness
+            buf0Layout.stepRate = 1
+        }
+        
+        return descriptor
+    }
+}
+
+struct MetalRenderDemo {
+    static func makePipelineDescriptor(for device: MTLDevice) -> MTLRenderPipelineDescriptor {
         let pipeline = MTLRenderPipelineDescriptor()
 
         // Q: why do you need a device to make a library?
@@ -43,7 +71,6 @@ struct MetalRenderDemo {
         let library = device.makeDefaultLibrary()!
         
         pipeline.vertexFunction = library.makeFunction(name: "vertex_shader")!
-        // TODO: fragment shader
         pipeline.fragmentFunction = library.makeFunction(name: "fragment_shader")!
         
         // this might seem redundant - we specify a pixel format for the render
@@ -54,10 +81,12 @@ struct MetalRenderDemo {
         // textures.
         pipeline.colorAttachments[0].pixelFormat = .rgba8Uint
         
+        pipeline.vertexDescriptor = MyVertex.vertexDescriptor()
+        
         return pipeline
     }
     
-    mutating func makeDescriptor(for device: MTLDevice, with texture: MTLTexture) -> MTLRenderPassDescriptor {
+    static func makePassDescriptor(for device: MTLDevice, with texture: MTLTexture) -> MTLRenderPassDescriptor {
         let descriptor = MTLRenderPassDescriptor()
  
         // ... we now tell metal that this descriptor has a color attachment
@@ -74,18 +103,45 @@ struct MetalRenderDemo {
         return descriptor
     }
     
-    func makeVerticesForTriangle() -> [SIMD3<Float>] {
-        let triangleVertices: [SIMD3<Float>] = [
-            SIMD3<Float>(-0.5, -0.5, 0.0),
-            SIMD3<Float>( 0.5, -0.5, 0.0),
-            SIMD3<Float>( 0.0,  0.5, 0.0)
+    static func makeVerticesForTriangle(at time: Int) -> [MyVertex] {
+        let t = Float(time)
+        let triangleVertices: [MyVertex] = [
+            MyVertex(time: t, position: SIMD3<Float>(-0.5, -0.5, 0.0)),
+            MyVertex(time: t, position: SIMD3<Float>( 0.5, -0.5, 0.0)),
+            MyVertex(time: t, position: SIMD3<Float>( 0.0,  0.5, 0.0))
         ]
         
         return triangleVertices
     }
     
-    func getCGImage() -> CGImage? {
-        let texture = self.texture!
+    func render(at time: Int) {
+        // 1. do the drawing
+        let wrappedTime = time % (maxT + 1)
+        if let buf = queue.makeCommandBuffer() {
+            let encoder = buf.makeRenderCommandEncoder(
+                descriptor: MetalRenderDemo.makePassDescriptor(for: device, with: texture))!
+            
+            
+            encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+            encoder.setRenderPipelineState(pipeline)
+            
+            // we copied the vertex data maxT times, so we can just render the triangles
+            // at time*3 to get the right time values
+            encoder.drawPrimitives(type: .triangle, vertexStart: wrappedTime * 3, vertexCount: 3)
+            
+            encoder.endEncoding()
+            
+            buf.commit()
+            buf.waitUntilCompleted()
+        }
+    }
+    
+    func renderImage(at time: Int) -> CGImage? {
+        self.render(at: time)
+        return getCGImage()
+    }
+    
+    private func getCGImage() -> CGImage? {
         let width = texture.width
         let height = texture.height
         let rowBytes = width * 4
@@ -112,7 +168,7 @@ struct MetalRenderDemo {
         return ctx.makeImage()
     }
     
-    func makeTexture(for device: MTLDevice) -> MTLTexture {
+    static func makeTexture(for device: MTLDevice) -> MTLTexture {
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .rgba8Uint,
             width: 256,
@@ -126,37 +182,34 @@ struct MetalRenderDemo {
         return device.makeTexture(descriptor: textureDescriptor)!
     }
     
+    let device: MTLDevice
+    let queue: MTLCommandQueue
+    let pipeline: MTLRenderPipelineState
+    let texture: MTLTexture
+    let vertexBuffer: MTLBuffer
+    let maxT: Int = 100
+    
     init() throws {
-        let device = MTLCreateSystemDefaultDevice()!
-        let queue = device.makeCommandQueue()!
-        let buf = queue.makeCommandBuffer()!
-        
+        device = MTLCreateSystemDefaultDevice()!
+        queue = device.makeCommandQueue()!
         // pipeline = how to draw
-        let pipelineDescriptor = makePipeline(for: device)
-        let pipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+        pipeline = try device.makeRenderPipelineState(
+            descriptor: MetalRenderDemo.makePipelineDescriptor(for: device))
         
         // pass = where to draw to
-        let texture = makeTexture(for: device)
-        let passDescriptor = makeDescriptor(for: device, with: texture)
-        let encoder = buf.makeRenderCommandEncoder(descriptor: passDescriptor)!
-
+        texture = MetalRenderDemo.makeTexture(for: device)
+        
         // vertices - what to draw
-        let vertices = makeVerticesForTriangle()
-        let vertexBuffer = device.makeBuffer(bytes: vertices,
-                                             length: MemoryLayout<SIMD3<Float>>.size * vertices.count,
-                                             options: [])
+        let times = Array(0...maxT)
+        let vertices: [MyVertex] = times.flatMap { t in
+            MetalRenderDemo.makeVerticesForTriangle(at: t)
+        }
         
-        encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-        
-        // BOOM
-        encoder.setRenderPipelineState(pipelineState)
-        encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
-        
-        encoder.endEncoding()
-        buf.commit()
-        buf.waitUntilCompleted()
-        
-        self.texture = texture
+        // keep it around because every time we make an encoder we will have to
+        // say that we're using this vertex buffer
+        vertexBuffer = device.makeBuffer(bytes: vertices,
+                                             length: MemoryLayout<MyVertex>.size * vertices.count,
+                                             options: [])!
     }
 }
 

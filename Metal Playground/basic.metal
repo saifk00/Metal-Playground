@@ -18,13 +18,25 @@ kernel void add_arrays(device long* A [[buffer(0)]],
     C[gid] = B[gid] + A[gid];
 }
 
-vertex float4 vertex_shader(uint vertexID [[vertex_id]],
-                           constant simd::float3* vertexPositions) {
-    float4 vertexOutPositions = float4(vertexPositions[vertexID][0],
-                                       vertexPositions[vertexID][1],
-                                       vertexPositions[vertexID][2],
-                                       1.0f);
-    return vertexOutPositions;
+struct VertexInput {
+    float3 position [[ attribute(1) ]];
+    float time [[ attribute(0) ]];
+};
+
+vertex float4 vertex_shader(VertexInput vIn [[ stage_in ]]) {
+    float phase = 2 * M_PI_F * (vIn.time / 100.0f);
+    float u = 0.5f * (1 + sin(phase)); // in [0, 1]
+    
+    // breathe from 0.2 to 10
+    float wMin = 0.2;
+    float wMax = 1.0;
+    float wScale = wMin + u * (wMax - wMin);
+    
+    float4 vOut = float4(vIn.position[0],
+                                       vIn.position[1],
+                                       vIn.position[2],
+                                       wScale);
+    return vOut;
 }
  
 

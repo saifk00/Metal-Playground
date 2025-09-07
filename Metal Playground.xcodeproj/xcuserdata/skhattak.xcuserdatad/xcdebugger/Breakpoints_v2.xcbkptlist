@@ -14,8 +14,8 @@
             filePath = "Metal Playground/ContentView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "207"
-            endingLineNumber = "207"
+            startingLineNumber = "260"
+            endingLineNumber = "260"
             landmarkName = "init()"
             landmarkType = "7">
          </BreakpointContent>
@@ -30,8 +30,8 @@
             filePath = "Metal Playground/ContentView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "205"
-            endingLineNumber = "205"
+            startingLineNumber = "258"
+            endingLineNumber = "258"
             landmarkName = "init()"
             landmarkType = "7">
          </BreakpointContent>
@@ -46,9 +46,9 @@
             filePath = "Metal Playground/ContentView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "55"
-            endingLineNumber = "55"
-            landmarkName = "makePipeline(for:)"
+            startingLineNumber = "82"
+            endingLineNumber = "82"
+            landmarkName = "makePipelineDescriptor(for:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -62,9 +62,9 @@
             filePath = "Metal Playground/ContentView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "47"
-            endingLineNumber = "47"
-            landmarkName = "makePipeline(for:)"
+            startingLineNumber = "74"
+            endingLineNumber = "74"
+            landmarkName = "makePipelineDescriptor(for:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
