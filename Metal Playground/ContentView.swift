@@ -156,7 +156,7 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
     
     func render(into passDescriptor: MTLRenderPassDescriptor,
                 presenting drawable: MTLDrawable) {
-        let time = Int(CACurrentMediaTime() - self.t0)
+        let time = Int(floor((CACurrentMediaTime() - self.t0) * 60.0))
         // 1. do the drawing
         let wrappedTime = time % tResolution
         guard let cb = queue.makeCommandBuffer(),
