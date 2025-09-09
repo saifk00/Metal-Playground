@@ -39,6 +39,6 @@ vertex float4 vertex_shader(VertexInput vIn [[ stage_in ]]) {
 }
  
 
-fragment uint4 fragment_shader() {
-    return uint4(0, 255, 0, 255);
+fragment half4 fragment_shader() {
+    return half4(0.0, 1.0, 0.0, 1.0);
 }

@@ -7,25 +7,47 @@
 
 import SwiftUI
 import simd
+import MetalKit
 
 struct ContentView: View {
     @State private var speed = 180.0
-    let demo: MetalRenderDemo
+    @State private var color: NSColor = .systemPink
+    var body: some View {
+        VStack {
+            Text("hello metal!")
+            MetalRenderDemoView()
+                .frame(width: 500, height: 500)
+        }.padding()
+    }
+}
+
+// TODO an NSViewRepresentable for the metal demo
+struct MetalRenderDemoView : NSViewRepresentable {
+    var demo : MetalRenderDemo
+    var queue : MTLCommandQueue
+    var device: MTLDevice
     init() {
-        demo = try! MetalRenderDemo()
+        device = MTLCreateSystemDefaultDevice()!
+        queue = device.makeCommandQueue()!
+        demo = try! MetalRenderDemo(for: device, with: queue)
     }
     
-    var body: some View {
-        TimelineView(.periodic(from:.now, by: 1.0 / 360.0)) {ctx in
-            VStack {
-                let step = Int(speed * ctx.date.timeIntervalSinceReferenceDate)
-                let image = demo.renderImage(at: step)!
-                Slider(value: $speed, in: 60...360)
-                Image(image, scale: 1.0, label: Text("Hello triangle!"))
-            }
-            .padding()
-        }
+    func makeNSView(context: Context) -> MTKView {
+        let mtkView = MTKView()
+        mtkView.device = device
+        mtkView.delegate = demo
+        // this has to match the render pipeline
+        mtkView.colorPixelFormat = .bgra8Unorm
+        mtkView.framebufferOnly = true
+        mtkView.isPaused = false
+        mtkView.clearColor = MTLClearColor(red: 0.5, green: 0.1, blue: 0.12, alpha: 1.0)
+        mtkView.preferredFramesPerSecond = 60
+        return mtkView
     }
+    
+    func updateNSView(_ mtkView: MTKView, context: Context) {
+    }
+    
 }
 
 struct MyVertex {
@@ -66,7 +88,21 @@ struct MyVertex {
     }
 }
 
-struct MetalRenderDemo {
+class MetalRenderDemo : NSObject, MTKViewDelegate {
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+        return;
+    }
+    
+    func draw(in view: MTKView) {
+        guard
+            let rpd = view.currentRenderPassDescriptor,
+            let drawable = view.currentDrawable
+        else { return }
+        
+        // TODO how to plumb time into here?
+        render(into: rpd, presenting: drawable)
+    }
+    
     static func makePipelineDescriptor(for device: MTLDevice) -> MTLRenderPipelineDescriptor {
         let pipeline = MTLRenderPipelineDescriptor()
 
@@ -83,7 +119,7 @@ struct MetalRenderDemo {
         // we might use this pipeline for many different passes! this pipeline
         // is compatible with any pass that uses rgba8Uint format for its
         // textures.
-        pipeline.colorAttachments[0].pixelFormat = .rgba8Uint
+        pipeline.colorAttachments[0].pixelFormat = .bgra8Unorm
         
         pipeline.vertexDescriptor = MyVertex.vertexDescriptor()
         
@@ -100,8 +136,8 @@ struct MetalRenderDemo {
         // store the data back to that same texture
         descriptor.colorAttachments[0].loadAction = .clear
         // the values here are interpreted with respect to the pixelformat of the corresponding texture
-        // since we are using rgbaUint8, we need to provide values in range [0, 255]
-        descriptor.colorAttachments[0].clearColor = .init(red: 255.0, green: 0.0, blue: 0.0, alpha: 128.0)
+        // since we are using rgbaUnorm, the ranges are [0,1]
+        descriptor.colorAttachments[0].clearColor = .init(red: 1, green: 0.0, blue: 0.0, alpha: 0.5)
         descriptor.colorAttachments[0].storeAction = .store
         
         return descriptor
@@ -118,34 +154,30 @@ struct MetalRenderDemo {
         return triangleVertices
     }
     
-    func render(at time: Int) {
+    func render(into passDescriptor: MTLRenderPassDescriptor,
+                presenting drawable: MTLDrawable) {
+        let time = Int(CACurrentMediaTime() - self.t0)
         // 1. do the drawing
         let wrappedTime = time % tResolution
-        if let buf = queue.makeCommandBuffer() {
-            let encoder = buf.makeRenderCommandEncoder(
-                descriptor: MetalRenderDemo.makePassDescriptor(for: device, with: texture))!
-            
-            
-            encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-            encoder.setRenderPipelineState(pipeline)
-            
-            // we copied the vertex data maxT times, so we can just render the triangles
-            // at time*3 to get the right time values
-            encoder.drawPrimitives(type: .triangle, vertexStart: wrappedTime * 3, vertexCount: 3)
-            
-            encoder.endEncoding()
-            
-            buf.commit()
-            buf.waitUntilCompleted()
-        }
+        guard let cb = queue.makeCommandBuffer(),
+              let enc = cb.makeRenderCommandEncoder(descriptor: passDescriptor)
+        else { return }
+
+        enc.setRenderPipelineState(pipeline)
+        enc.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+
+        
+        // we copied the vertex data maxT times, so we can just render the triangles
+        // at time*3 to get the right time values
+        enc.drawPrimitives(type: .triangle, vertexStart: wrappedTime * 3, vertexCount: 3)
+        
+        enc.endEncoding()
+        
+        cb.present(drawable)
+        cb.commit()
     }
     
-    func renderImage(at time: Int) -> CGImage? {
-        self.render(at: time)
-        return getCGImage()
-    }
-    
-    private func getCGImage() -> CGImage? {
+    static func getCGImage(from texture: MTLTexture) -> CGImage? {
         let width = texture.width
         let height = texture.height
         let rowBytes = width * 4
@@ -192,10 +224,12 @@ struct MetalRenderDemo {
     let texture: MTLTexture
     let vertexBuffer: MTLBuffer
     let tResolution: Int = 360
+    let t0: Double
     
-    init() throws {
-        device = MTLCreateSystemDefaultDevice()!
-        queue = device.makeCommandQueue()!
+    init(for device: MTLDevice, with queue: MTLCommandQueue) throws {
+        self.t0 = Double(CACurrentMediaTime())
+        self.device = device
+        self.queue = queue
         // pipeline = how to draw
         pipeline = try device.makeRenderPipelineState(
             descriptor: MetalRenderDemo.makePipelineDescriptor(for: device))
@@ -212,56 +246,8 @@ struct MetalRenderDemo {
         // keep it around because every time we make an encoder we will have to
         // say that we're using this vertex buffer
         vertexBuffer = device.makeBuffer(bytes: vertices,
-                                             length: MemoryLayout<MyVertex>.size * vertices.count,
+                                             length: MemoryLayout<MyVertex>.stride * vertices.count,
                                              options: [])!
-    }
-}
-
-struct MetalComputeDemo {
-    let result: [Int64]
-    init() {
-        let device = MTLCreateSystemDefaultDevice()!
-        let queue = device.makeCommandQueue()!
-        let buf = queue.makeCommandBuffer()!
-        let encoder = buf.makeComputeCommandEncoder()!
-        
-        let A = [1, 2, 3, 4, 5, 6, 0, 0, 0]
-        
-        let bufLength = A.count * MemoryLayout<Int64>.stride
-        let subLength = 3 * MemoryLayout<Int64>.stride
-        
-        let arrayBuf = device.makeBuffer(bytes: A, length: bufLength)
-
-        encoder.setBuffer(arrayBuf, offset: 0, index: 0)
-        encoder.setBuffer(arrayBuf, offset: subLength, index: 1)
-        encoder.setBuffer(arrayBuf, offset: 2*subLength, index: 2)
-        
-        let library = device.makeDefaultLibrary()!
-        let addArraysFunc = library.makeFunction(name: "add_arrays")!
-
-        var pipeline: MTLComputePipelineState
-        do {
-            pipeline = try device.makeComputePipelineState(function: addArraysFunc)
-        } catch {
-            print("pipeline creation failed")
-            self.result = []
-            return
-        }
-        
-        encoder.setComputePipelineState(pipeline)
-        
-        let gridShape = MTLSize(width: 1, height: 1, depth: 1)
-        let groupShape = MTLSize(width: A.count, height: 1, depth: 1)
-        encoder.dispatchThreadgroups(gridShape, threadsPerThreadgroup: groupShape)
-        
-        encoder.endEncoding()
-        buf.commit()
-        buf.waitUntilCompleted()
-        
-        let outPtr = arrayBuf?.contents().bindMemory(to: Int64.self, capacity: A.count)
-        let startPtr = outPtr! + 6
-        let bufPtr = UnsafeBufferPointer(start: startPtr, count: 3)
-        self.result = Array(bufPtr)
     }
 }
 
