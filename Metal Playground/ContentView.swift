@@ -88,6 +88,11 @@ struct MyVertex {
     }
 }
 
+enum Demo {
+    case Triangle
+    case Quad
+};
+
 class MetalRenderDemo : NSObject, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         return;
@@ -99,8 +104,10 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
             let drawable = view.currentDrawable
         else { return }
         
+        print (view.drawableSize);
+        
         // TODO how to plumb time into here?
-        render(into: rpd, presenting: drawable)
+        render(into: rpd, presenting: drawable, mode: Demo.Quad)
     }
     
     static func makePipelineDescriptor(for device: MTLDevice) -> MTLRenderPipelineDescriptor {
@@ -121,6 +128,21 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
         // textures.
         pipeline.colorAttachments[0].pixelFormat = .bgra8Unorm
         
+        pipeline.vertexDescriptor = MyVertex.vertexDescriptor()
+        
+        return pipeline
+    }
+    
+    static func makeFlatQuadPipeline(for device: MTLDevice) -> MTLRenderPipelineDescriptor {
+        let pipeline = MTLRenderPipelineDescriptor()
+        
+        let library = device.makeDefaultLibrary()!
+        
+        pipeline.vertexFunction = library.makeFunction(name: "quad_vertex_shader")!
+        pipeline.fragmentFunction = library.makeFunction(name: "quad_fragment_shader")!
+        
+        pipeline.colorAttachments[0].pixelFormat = .bgra8Unorm
+        // TODO theres no reason flatquad needs time
         pipeline.vertexDescriptor = MyVertex.vertexDescriptor()
         
         return pipeline
@@ -155,7 +177,8 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
     }
     
     func render(into passDescriptor: MTLRenderPassDescriptor,
-                presenting drawable: MTLDrawable) {
+                presenting drawable: MTLDrawable,
+                mode: Demo) {
         let time = Int(floor((CACurrentMediaTime() - self.t0) * 60.0))
         // 1. do the drawing
         let wrappedTime = time % tResolution
@@ -163,13 +186,22 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
               let enc = cb.makeRenderCommandEncoder(descriptor: passDescriptor)
         else { return }
 
-        enc.setRenderPipelineState(pipeline)
-        enc.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-
-        
-        // we copied the vertex data maxT times, so we can just render the triangles
-        // at time*3 to get the right time values
-        enc.drawPrimitives(type: .triangle, vertexStart: wrappedTime * 3, vertexCount: 3)
+        if (mode == Demo.Triangle) {
+            enc.setRenderPipelineState(trianglePipeline)
+            enc.setVertexBuffer(triangleSequenceVertices, offset: 0, index: 0)
+            // we copied the vertex data maxT times, so we can just render the triangles
+            // at time*3 to get the right time values
+            enc.drawPrimitives(type: .triangle, vertexStart: wrappedTime * 3, vertexCount: 3)
+        } else if (mode == Demo.Quad) {
+            enc.setRenderPipelineState(flatQuadPipeline)
+            enc.setVertexBuffer(flatQuad, offset: 0, index: 0)
+            enc.drawIndexedPrimitives(
+                type:.triangleStrip,
+                indexCount: 6,
+                indexType: .uint16,
+                indexBuffer: flatQuadIdx,
+                indexBufferOffset: 0)
+        }
         
         enc.endEncoding()
         
@@ -220,9 +252,13 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
     
     let device: MTLDevice
     let queue: MTLCommandQueue
-    let pipeline: MTLRenderPipelineState
+    let trianglePipeline: MTLRenderPipelineState
     let texture: MTLTexture
-    let vertexBuffer: MTLBuffer
+    let triangleSequenceVertices: MTLBuffer
+    
+    let flatQuadPipeline: MTLRenderPipelineState
+    let flatQuad: MTLBuffer
+    let flatQuadIdx: MTLBuffer
     let tResolution: Int = 360
     let t0: Double
     
@@ -231,8 +267,10 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
         self.device = device
         self.queue = queue
         // pipeline = how to draw
-        pipeline = try device.makeRenderPipelineState(
+        trianglePipeline = try device.makeRenderPipelineState(
             descriptor: MetalRenderDemo.makePipelineDescriptor(for: device))
+        flatQuadPipeline = try device.makeRenderPipelineState(
+            descriptor: MetalRenderDemo.makeFlatQuadPipeline(for: device))
         
         // pass = where to draw to
         texture = MetalRenderDemo.makeTexture(for: device)
@@ -245,9 +283,25 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
         
         // keep it around because every time we make an encoder we will have to
         // say that we're using this vertex buffer
-        vertexBuffer = device.makeBuffer(bytes: vertices,
+        triangleSequenceVertices = device.makeBuffer(bytes: vertices,
                                              length: MemoryLayout<MyVertex>.stride * vertices.count,
                                              options: [])!
+        
+        flatQuad = device.makeBuffer(bytes: [
+            MyVertex(time: 0.0, position: SIMD3<Float>(-1, -1, 0)),
+            MyVertex(time: 0.0, position: SIMD3<Float>(-1, 1, 0)),
+            MyVertex(time: 0.0, position: SIMD3<Float>(1, 1, 0)),
+            MyVertex(time: 0.0, position: SIMD3<Float>(1, -1, 0)),
+        ], length: MemoryLayout<MyVertex>.stride * 4,
+                                     options: [])!
+        
+        let indices: [UInt16] = [
+            0, 1, 2,
+            0, 2, 3
+        ]
+        
+        flatQuadIdx = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * 6,
+                                        options: [])!;
     }
 }
 
