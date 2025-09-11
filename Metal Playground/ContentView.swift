@@ -107,7 +107,7 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
         print (view.drawableSize);
         
         // TODO how to plumb time into here?
-        render(into: rpd, presenting: drawable, mode: Demo.Quad)
+        render(into: rpd, presenting: drawable, mode: Demo.Triangle)
     }
     
     static func makePipelineDescriptor(for device: MTLDevice) -> MTLRenderPipelineDescriptor {
@@ -179,24 +179,18 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
     func render(into passDescriptor: MTLRenderPassDescriptor,
                 presenting drawable: MTLDrawable,
                 mode: Demo) {
-        let time = Int(floor((CACurrentMediaTime() - self.t0) * 60.0))
-        // 1. do the drawing
-        let wrappedTime = time % tResolution
         guard let cb = queue.makeCommandBuffer(),
               let enc = cb.makeRenderCommandEncoder(descriptor: passDescriptor)
         else { return }
 
         if (mode == Demo.Triangle) {
             enc.setRenderPipelineState(trianglePipeline)
-            enc.setVertexBuffer(triangleSequenceVertices, offset: 0, index: 0)
-            // we copied the vertex data maxT times, so we can just render the triangles
-            // at time*3 to get the right time values
-            enc.drawPrimitives(type: .triangle, vertexStart: wrappedTime * 3, vertexCount: 3)
+            triangleDemo.draw(with: enc)
         } else if (mode == Demo.Quad) {
             enc.setRenderPipelineState(flatQuadPipeline)
             enc.setVertexBuffer(flatQuad, offset: 0, index: 0)
             enc.drawIndexedPrimitives(
-                type:.triangleStrip,
+                type:.triangle,
                 indexCount: 6,
                 indexType: .uint16,
                 indexBuffer: flatQuadIdx,
@@ -236,25 +230,10 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
         return ctx.makeImage()
     }
     
-    static func makeTexture(for device: MTLDevice) -> MTLTexture {
-        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .rgba8Uint,
-            width: 256,
-            height: 256,
-            mipmapped: false)
-        textureDescriptor.usage = [.renderTarget, .shaderRead]
-        
-        // so the actual texture data is now stored on the device, with
-        // undefined values. `texture` is a host reference to this memory,
-        // which can be used in other API calls, for example...
-        return device.makeTexture(descriptor: textureDescriptor)!
-    }
-    
     let device: MTLDevice
     let queue: MTLCommandQueue
+    var triangleDemo: DemoRunner
     let trianglePipeline: MTLRenderPipelineState
-    let texture: MTLTexture
-    let triangleSequenceVertices: MTLBuffer
     
     let flatQuadPipeline: MTLRenderPipelineState
     let flatQuad: MTLBuffer
@@ -267,25 +246,13 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
         self.device = device
         self.queue = queue
         // pipeline = how to draw
-        trianglePipeline = try device.makeRenderPipelineState(
-            descriptor: MetalRenderDemo.makePipelineDescriptor(for: device))
+        triangleDemo = TriangleDemo()
+        trianglePipeline = triangleDemo.initPipeline(for: device)
+        triangleDemo.initBuffers(for: device)
+        
+        
         flatQuadPipeline = try device.makeRenderPipelineState(
             descriptor: MetalRenderDemo.makeFlatQuadPipeline(for: device))
-        
-        // pass = where to draw to
-        texture = MetalRenderDemo.makeTexture(for: device)
-        
-        // vertices - what to draw
-        let times = Array(0...tResolution)
-        let vertices: [MyVertex] = times.flatMap { t in
-            MetalRenderDemo.makeVerticesForTriangle(at: t)
-        }
-        
-        // keep it around because every time we make an encoder we will have to
-        // say that we're using this vertex buffer
-        triangleSequenceVertices = device.makeBuffer(bytes: vertices,
-                                             length: MemoryLayout<MyVertex>.stride * vertices.count,
-                                             options: [])!
         
         flatQuad = device.makeBuffer(bytes: [
             MyVertex(time: 0.0, position: SIMD3<Float>(-1, -1, 0)),
@@ -302,6 +269,60 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
         
         flatQuadIdx = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * 6,
                                         options: [])!;
+    }
+}
+
+protocol DemoRunner {
+    // before rendering, a caller will set the state to this pipelinestate
+    func initPipeline(for device: MTLDevice) -> MTLRenderPipelineState
+    mutating func initBuffers(for device: MTLDevice)
+    func draw(with encoder: MTLRenderCommandEncoder)
+}
+
+struct TriangleDemo : DemoRunner {
+    let tResolution: Int = 360
+    let t0: Double
+    var triangleSequenceVertices: MTLBuffer?
+    
+    init() {
+        t0 = Double(CACurrentMediaTime())
+    }
+    
+    func initPipeline(for device: MTLDevice) -> MTLRenderPipelineState {
+        let pipeline = MTLRenderPipelineDescriptor()
+
+        // Q: why do you need a device to make a library?
+        // A: the shaders need to be compiled _for this device_ to be used
+        let library = device.makeDefaultLibrary()!
+        
+        pipeline.vertexFunction = library.makeFunction(name: "vertex_shader")!
+        pipeline.fragmentFunction = library.makeFunction(name: "fragment_shader")!
+        pipeline.colorAttachments[0].pixelFormat = .bgra8Unorm
+        
+        pipeline.vertexDescriptor = MyVertex.vertexDescriptor()
+        
+        return try! device.makeRenderPipelineState(descriptor: pipeline)
+    }
+    
+    mutating func initBuffers(for device: MTLDevice) {
+        let times = Array(0...tResolution)
+        let vertices: [MyVertex] = times.flatMap { t in
+            MetalRenderDemo.makeVerticesForTriangle(at: t)
+        }
+
+        triangleSequenceVertices = device.makeBuffer(bytes: vertices,
+                                             length: MemoryLayout<MyVertex>.stride * vertices.count,
+                                             options: [])!
+    }
+    
+    func draw(with encoder: MTLRenderCommandEncoder) {
+        let time = Int(floor((CACurrentMediaTime() - self.t0) * 60.0))
+        // 1. do the drawing
+        let wrappedTime = time % tResolution
+        encoder.setVertexBuffer(triangleSequenceVertices, offset: 0, index: 0)
+        // we copied the vertex data maxT times, so we can just render the triangles
+        // at time*3 to get the right time values
+        encoder.drawPrimitives(type: .triangle, vertexStart: wrappedTime * 3, vertexCount: 3)
     }
 }
 
