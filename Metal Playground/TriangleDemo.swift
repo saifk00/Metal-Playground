@@ -19,6 +19,17 @@ struct TriangleDemo : DemoRunner {
         t0 = Double(CACurrentMediaTime())
     }
     
+    private static func makeVerticesForTriangle(at time: Int) -> [MyVertex] {
+        let t = Float(time)
+        let triangleVertices: [MyVertex] = [
+            MyVertex(time: t, position: SIMD3<Float>(-0.5, -0.5, 0.0)),
+            MyVertex(time: t, position: SIMD3<Float>( 0.5, -0.5, 0.0)),
+            MyVertex(time: t, position: SIMD3<Float>( 0.0,  0.5, 0.0))
+        ]
+        
+        return triangleVertices
+    }
+    
     func initPipeline(for device: MTLDevice) -> MTLRenderPipelineState {
         let pipeline = MTLRenderPipelineDescriptor()
 
@@ -38,7 +49,7 @@ struct TriangleDemo : DemoRunner {
     mutating func initBuffers(for device: MTLDevice) {
         let times = Array(0...tResolution)
         let vertices: [MyVertex] = times.flatMap { t in
-            MetalRenderDemo.makeVerticesForTriangle(at: t)
+            TriangleDemo.makeVerticesForTriangle(at: t)
         }
 
         triangleSequenceVertices = device.makeBuffer(bytes: vertices,
