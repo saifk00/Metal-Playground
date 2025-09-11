@@ -22,7 +22,7 @@ struct QuadDemo : DemoRunner  {
         pipeline.fragmentFunction = library.makeFunction(name: "quad_fragment_shader")!
         
         pipeline.colorAttachments[0].pixelFormat = .bgra8Unorm
-        // TODO theres no reason flatquad needs time
+        // TODO theres no reason flatquad needs time - we can omit this
         pipeline.vertexDescriptor = MyVertex.vertexDescriptor()
         
         return try! device.makeRenderPipelineState(descriptor: pipeline)
