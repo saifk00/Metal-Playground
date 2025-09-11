@@ -144,13 +144,9 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
               let enc = cb.makeRenderCommandEncoder(descriptor: passDescriptor)
         else { return }
 
-        if (mode == Demo.Triangle) {
-            enc.setRenderPipelineState(trianglePipeline)
-            triangleDemo.draw(with: enc)
-        } else if (mode == Demo.Quad) {
-            enc.setRenderPipelineState(flatQuadPipeline)
-            flatQuadDemo.draw(with: enc)
-        }
+        let runnable = demoCache[mode]
+        enc.setRenderPipelineState(runnable!.pipeline)
+        runnable!.runner.draw(with: enc)
         
         enc.endEncoding()
         
@@ -187,128 +183,30 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
     
     let device: MTLDevice
     let queue: MTLCommandQueue
-    var triangleDemo: DemoRunner
-    let trianglePipeline: MTLRenderPipelineState
-    
-    var flatQuadDemo: DemoRunner
-    let flatQuadPipeline: MTLRenderPipelineState
+
+    var demoCache: [Demo : Runnable] = [:]
     
     init(for device: MTLDevice, with queue: MTLCommandQueue) throws {
         self.device = device
         self.queue = queue
 
-        triangleDemo = TriangleDemo()
-        trianglePipeline = triangleDemo.initPipeline(for: device)
+        var triangleDemo = TriangleDemo()
+        let trianglePipeline = triangleDemo.initPipeline(for: device)
         triangleDemo.initBuffers(for: device)
         
         
-        flatQuadDemo = QuadDemo()
-        flatQuadPipeline = flatQuadDemo.initPipeline(for: device)
+        var flatQuadDemo = QuadDemo()
+        let flatQuadPipeline = flatQuadDemo.initPipeline(for: device)
         flatQuadDemo.initBuffers(for: device)
+        
+        demoCache[.Triangle] = Runnable(pipeline: trianglePipeline, runner: triangleDemo)
+        demoCache[.Quad] = Runnable(pipeline: flatQuadPipeline, runner: flatQuadDemo)
     }
 }
 
-protocol DemoRunner {
-    // before rendering, a caller will set the state to this pipelinestate
-    func initPipeline(for device: MTLDevice) -> MTLRenderPipelineState
-    mutating func initBuffers(for device: MTLDevice)
-    func draw(with encoder: MTLRenderCommandEncoder)
-}
-
-struct QuadDemo : DemoRunner  {
-    var flatQuadBuffer: MTLBuffer?
-    var flatQuadIdx: MTLBuffer?
-    func initPipeline(for device: any MTLDevice) -> any MTLRenderPipelineState {
-        let pipeline = MTLRenderPipelineDescriptor()
-        
-        let library = device.makeDefaultLibrary()!
-        
-        pipeline.vertexFunction = library.makeFunction(name: "quad_vertex_shader")!
-        pipeline.fragmentFunction = library.makeFunction(name: "quad_fragment_shader")!
-        
-        pipeline.colorAttachments[0].pixelFormat = .bgra8Unorm
-        // TODO theres no reason flatquad needs time
-        pipeline.vertexDescriptor = MyVertex.vertexDescriptor()
-        
-        return try! device.makeRenderPipelineState(descriptor: pipeline)
-    }
-    
-    mutating func initBuffers(for device: any MTLDevice) {
-        flatQuadBuffer = device.makeBuffer(bytes: [
-            MyVertex(time: 0.0, position: SIMD3<Float>(-1, -1, 0)),
-            MyVertex(time: 0.0, position: SIMD3<Float>(-1, 1, 0)),
-            MyVertex(time: 0.0, position: SIMD3<Float>(1, 1, 0)),
-            MyVertex(time: 0.0, position: SIMD3<Float>(1, -1, 0)),
-        ], length: MemoryLayout<MyVertex>.stride * 4,
-                                     options: [])!
-        
-        let indices: [UInt16] = [
-            0, 1, 2,
-            0, 2, 3
-        ]
-        
-        flatQuadIdx = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * 6,
-                                        options: [])!;
-    }
-    
-    func draw(with encoder: any MTLRenderCommandEncoder) {
-        encoder.setVertexBuffer(flatQuadBuffer!, offset: 0, index: 0)
-        encoder.drawIndexedPrimitives(
-            type:.triangle,
-            indexCount: 6,
-            indexType: .uint16,
-            indexBuffer: flatQuadIdx!,
-            indexBufferOffset: 0)
-    }
-    
-    
-}
-
-struct TriangleDemo : DemoRunner {
-    let tResolution: Int = 360
-    let t0: Double
-    var triangleSequenceVertices: MTLBuffer?
-    
-    init() {
-        t0 = Double(CACurrentMediaTime())
-    }
-    
-    func initPipeline(for device: MTLDevice) -> MTLRenderPipelineState {
-        let pipeline = MTLRenderPipelineDescriptor()
-
-        // Q: why do you need a device to make a library?
-        // A: the shaders need to be compiled _for this device_ to be used
-        let library = device.makeDefaultLibrary()!
-        
-        pipeline.vertexFunction = library.makeFunction(name: "vertex_shader")!
-        pipeline.fragmentFunction = library.makeFunction(name: "fragment_shader")!
-        pipeline.colorAttachments[0].pixelFormat = .bgra8Unorm
-        
-        pipeline.vertexDescriptor = MyVertex.vertexDescriptor()
-        
-        return try! device.makeRenderPipelineState(descriptor: pipeline)
-    }
-    
-    mutating func initBuffers(for device: MTLDevice) {
-        let times = Array(0...tResolution)
-        let vertices: [MyVertex] = times.flatMap { t in
-            MetalRenderDemo.makeVerticesForTriangle(at: t)
-        }
-
-        triangleSequenceVertices = device.makeBuffer(bytes: vertices,
-                                             length: MemoryLayout<MyVertex>.stride * vertices.count,
-                                             options: [])!
-    }
-    
-    func draw(with encoder: MTLRenderCommandEncoder) {
-        let time = Int(floor((CACurrentMediaTime() - self.t0) * 60.0))
-        // 1. do the drawing
-        let wrappedTime = time % tResolution
-        encoder.setVertexBuffer(triangleSequenceVertices, offset: 0, index: 0)
-        // we copied the vertex data maxT times, so we can just render the triangles
-        // at time*3 to get the right time values
-        encoder.drawPrimitives(type: .triangle, vertexStart: wrappedTime * 3, vertexCount: 3)
-    }
+struct Runnable {
+    let pipeline: MTLRenderPipelineState
+    let runner: DemoRunner
 }
 
 #Preview {
