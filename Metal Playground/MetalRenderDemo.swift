@@ -20,11 +20,9 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
         guard
             let rpd = view.currentRenderPassDescriptor,
             let drawable = view.currentDrawable
-        else { return }
-        
-        print (view.drawableSize);
-        
-        render(into: rpd, presenting: drawable, mode: Demo.Quad)
+        else {
+            return }
+        render(into: rpd, presenting: drawable, mode: currentDemo)
     }
 
     
@@ -33,7 +31,9 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
                 mode: Demo) {
         guard let cb = queue.makeCommandBuffer(),
               let enc = cb.makeRenderCommandEncoder(descriptor: passDescriptor)
-        else { return }
+        else { 
+            return 
+        }
 
         guard let runnable = demoCache[mode] else {
             enc.endEncoding()
@@ -41,7 +41,7 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
             cb.commit()
             return
         }
-  
+        
         enc.setRenderPipelineState(runnable.pipeline)
         runnable.runner.draw(with: enc)
         
@@ -53,8 +53,13 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
     
     let device: MTLDevice
     let queue: MTLCommandQueue
+    var currentDemo: Demo = .Triangle
 
     var demoCache: [Demo : Runnable] = [:]
+    
+    func setCurrentDemo(_ demo: Demo) {
+        currentDemo = demo
+    }
     
     init(for device: MTLDevice, with queue: MTLCommandQueue) throws {
         self.device = device

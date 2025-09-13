@@ -15,19 +15,21 @@ import MetalKit
  */
 struct MetalRenderDemoView : NSViewRepresentable {
     @Binding var selectedDemo: Demo
-    var demo : MetalRenderDemo
-    var queue : MTLCommandQueue
-    var device: MTLDevice
+    @State private var demo : MetalRenderDemo
+
     init(demo selected: Binding<Demo>) {
-        device = MTLCreateSystemDefaultDevice()!
-        queue = device.makeCommandQueue()!
-        demo = try! MetalRenderDemo(for: device, with: queue)
         _selectedDemo = selected
+        
+        // only initialize these once
+        let device = MTLCreateSystemDefaultDevice()!
+        let queue = device.makeCommandQueue()!
+        demo = try! MetalRenderDemo(for: device, with: queue)
     }
     
     func makeNSView(context: Context) -> MTKView {
         let mtkView = MTKView()
-        mtkView.device = device
+
+        mtkView.device = demo.device
         mtkView.delegate = demo
         // this has to match the render pipeline
         mtkView.colorPixelFormat = .bgra8Unorm
@@ -38,6 +40,8 @@ struct MetalRenderDemoView : NSViewRepresentable {
         return mtkView
     }
     
-    func updateNSView(_ mtkView: MTKView, context: Context) {}
+    func updateNSView(_ mtkView: MTKView, context: Context) {
+        demo.setCurrentDemo(selectedDemo)
+    }
     
 }

@@ -47,13 +47,27 @@ struct QuadDemo : DemoRunner  {
     }
     
     func draw(with encoder: any MTLRenderCommandEncoder) {
-        encoder.setVertexBuffer(flatQuadBuffer!, offset: 0, index: 0)
+        print("QuadDemo.draw() called")
+        
+        guard let vertexBuffer = flatQuadBuffer else {
+            print("ERROR: flatQuadBuffer is nil!")
+            return
+        }
+        
+        guard let indexBuffer = flatQuadIdx else {
+            print("ERROR: flatQuadIdx is nil!")
+            return
+        }
+        
+        print("QuadDemo: Setting vertex buffer and drawing")
+        encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         encoder.drawIndexedPrimitives(
             type:.triangle,
             indexCount: 6,
             indexType: .uint16,
-            indexBuffer: flatQuadIdx!,
+            indexBuffer: indexBuffer,
             indexBufferOffset: 0)
+        print("QuadDemo.draw() completed")
     }
     
     
