@@ -7,7 +7,8 @@
 
 import Foundation
 
-protocol Drawable {
+// TODO deprecate DrawableNode in favor of AbstractDrawableNode
+protocol DrawableNode : AbstractDrawableNode {
     associatedtype VertexType: CustomVertexStruct
     func generateVertices() -> [VertexType]
     func vertexCount() -> Int

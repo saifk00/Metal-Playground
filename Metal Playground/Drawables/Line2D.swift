@@ -8,7 +8,7 @@
 import Foundation
 import simd
 
-struct Line2D: Drawable {
+struct Line2D: DrawableNode, AbstractDrawableNode {
     typealias VertexType = PlotDSLVertex
     
     let from: Point
@@ -26,4 +26,14 @@ struct Line2D: Drawable {
     }
     
     func vertexCount() -> Int { return 2 }
+
+    var children: [any AbstractDrawableNode] { return [] }
+
+    func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result {
+        return visitor.visitSelf(self)
+    }
+
+    func isEqual(to other: Line2D) -> Bool {
+        return self.from == other.from && self.to == other.to
+    }
 }

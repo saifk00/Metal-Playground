@@ -8,7 +8,7 @@
 import Foundation
 import simd
 
-struct Plane: Drawable {
+struct Plane: DrawableNode, AbstractDrawableNode {
     typealias VertexType = PlotDSLVertex
     
     let n: SIMD3<Float>
@@ -60,4 +60,16 @@ struct Plane: Drawable {
     }
     
     func vertexCount() -> Int { return 6 }  // 2 triangles = 6 vertices
+
+    var children: [any AbstractDrawableNode] { return [] }
+
+    func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result {
+        return visitor.visitSelf(self)
+    }
+
+    func isEqual(to other: Plane) -> Bool {
+        return simd_equal(self.n, other.n) &&
+               simd_equal(self.offset, other.offset) &&
+               self.size == other.size
+    }
 }
