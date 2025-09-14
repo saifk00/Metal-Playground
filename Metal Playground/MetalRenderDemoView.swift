@@ -35,13 +35,23 @@ struct MetalRenderDemoView : NSViewRepresentable {
         mtkView.colorPixelFormat = .bgra8Unorm
         mtkView.framebufferOnly = true
         mtkView.isPaused = false
-        mtkView.clearColor = MTLClearColor(red: 0.5, green: 0.1, blue: 0.12, alpha: 1.0)
+        // Set initial clear color from default demo
+        if let runnable = demo.demoCache[demo.currentDemo] {
+            mtkView.clearColor = runnable.runner.clearColor
+        } else {
+            mtkView.clearColor = MTLClearColor(red: 0.5, green: 0.1, blue: 0.12, alpha: 1.0)
+        }
         mtkView.preferredFramesPerSecond = 60
         return mtkView
     }
     
     func updateNSView(_ mtkView: MTKView, context: Context) {
         demo.setCurrentDemo(selectedDemo)
+        
+        // Update clear color based on current demo
+        if let runnable = demo.demoCache[selectedDemo] {
+            mtkView.clearColor = runnable.runner.clearColor
+        }
     }
     
 }

@@ -69,12 +69,16 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
         let trianglePipeline = triangleDemo.initPipeline(for: device)
         triangleDemo.initBuffers(for: device)
         
-        
         var flatQuadDemo = QuadDemo()
         let flatQuadPipeline = flatQuadDemo.initPipeline(for: device)
         flatQuadDemo.initBuffers(for: device)
         
+        var plotDemo = PlotDemo()
+        let plotPipeline = plotDemo.initPipeline(for: device)
+        plotDemo.initBuffers(for: device)
+        
         demoCache[.Triangle] = Runnable(pipeline: trianglePipeline, runner: triangleDemo)
         demoCache[.Quad] = Runnable(pipeline: flatQuadPipeline, runner: flatQuadDemo)
+        demoCache[.Plot] = Runnable(pipeline: plotPipeline, runner: plotDemo)
     }
 }

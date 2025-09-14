@@ -51,3 +51,5 @@ The project targets macOS 15.5+ and uses Swift 5.0.
 4. Implement required Metal shaders in `basic.metal`
 
 The demo cache pattern ensures efficient pipeline state reuse across render frames.
+- alwayse use SIMDN<Float> instead of simd_float classes
+- dont use MARK - i find it distracting

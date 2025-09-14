@@ -9,8 +9,9 @@ import SwiftUI
 import simd
 import MetalKit
 
+
 struct ContentView: View {
-    @State private var selectedDemo: Demo = .Triangle
+    @State private var selectedDemo: Demo = .Plot
     var body: some View {
         VStack {
             Text("hello metal!")
@@ -24,7 +25,7 @@ struct ContentView: View {
             MetalRenderDemoView(demo: $selectedDemo)
                 .frame(width: 500, height: 500)
         }.padding()
-    }
+        }
 }
 
 enum Demo: String, CaseIterable, Identifiable {
@@ -32,6 +33,7 @@ enum Demo: String, CaseIterable, Identifiable {
     
     case Triangle
     case Quad
+    case Plot
 }
 
 struct Runnable {

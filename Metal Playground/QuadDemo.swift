@@ -13,6 +13,10 @@ import MetalKit
 struct QuadDemo : DemoRunner  {
     var flatQuadBuffer: MTLBuffer?
     var flatQuadIdx: MTLBuffer?
+    
+    var clearColor: MTLClearColor {
+        return MTLClearColor(red: 0.1, green: 0.3, blue: 0.1, alpha: 1.0) // Dark green background
+    }
     func initPipeline(for device: any MTLDevice) -> any MTLRenderPipelineState {
         let pipeline = MTLRenderPipelineDescriptor()
         

@@ -15,6 +15,10 @@ struct TriangleDemo : DemoRunner {
     let t0: Double
     var triangleSequenceVertices: MTLBuffer?
     
+    var clearColor: MTLClearColor {
+        return MTLClearColor(red: 0.5, green: 0.2, blue: 0.3, alpha: 1.0)
+    }
+    
     init() {
         t0 = Double(CACurrentMediaTime())
     }

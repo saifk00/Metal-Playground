@@ -10,7 +10,11 @@ import SwiftUI
 import simd
 import MetalKit
 
-struct MyVertex {
+protocol CustomVertexStruct {
+    static func vertexDescriptor() -> MTLVertexDescriptor
+}
+
+struct MyVertex : CustomVertexStruct {
     let time: Float
     let position: SIMD3<Float>
     

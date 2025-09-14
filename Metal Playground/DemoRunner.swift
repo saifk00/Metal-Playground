@@ -15,4 +15,5 @@ protocol DemoRunner {
     func initPipeline(for device: MTLDevice) -> MTLRenderPipelineState
     mutating func initBuffers(for device: MTLDevice)
     func draw(with encoder: MTLRenderCommandEncoder)
+    var clearColor: MTLClearColor { get }
 }
