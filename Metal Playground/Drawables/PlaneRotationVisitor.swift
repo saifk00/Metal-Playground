@@ -8,7 +8,7 @@
 import simd
 
 struct PlaneRotationVisitor: AbstractDrawableVisitor {
-    typealias Result = Void
+    typealias Result = AbstractDrawableNode
 
     let angle: Float
     let axis: SIMD3<Float>
@@ -19,17 +19,17 @@ struct PlaneRotationVisitor: AbstractDrawableVisitor {
     }
 
     // Override specifically for Plane - applies rotation to all planes
-    func visitSelf(_ plane: Plane) -> Void? {
+    func visitSelf(_ plane: Plane) -> AbstractDrawableNode? {
         let rotation = simd_float4x4(simd_quaternion(angle, axis))
         plane.applyTransform(rotation)
-        return nil
+        return plane
     }
 
     // Override specifically for PlaneNode - applies rotation to all plane nodes
-    func visitSelf(_ planeNode: PlaneNode) -> Void? {
+    func visitSelf(_ planeNode: PlaneNode) -> AbstractDrawableNode? {
         let rotation = simd_float4x4(simd_quaternion(angle, axis))
         planeNode.applyTransform(rotation)
-        return nil
+        return planeNode
     }
 }
 
@@ -39,7 +39,7 @@ struct TransformPipeline {
         let rotationVisitor = PlaneRotationVisitor(angle: angle, axis: [0, 0, 1])
 
         for node in nodes {
-            node.accept(rotationVisitor)
+            let _ = node.accept(rotationVisitor)
         }
     }
 }
