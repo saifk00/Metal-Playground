@@ -99,26 +99,15 @@ class MetalSceneRenderer {
     }
 
     private func generateVertices(for nodes: [any AbstractDrawableNode]) -> [PlotDSLVertex] {
-        var allVertices: [PlotDSLVertex] = []
+        // Stage 1: Generate base vertices using visitor pattern
+        let vertexGenerator = VertexGeneratorVisitor()
+        let baseVertices = vertexGenerator.collectVerticesFrom(nodes)
 
-        for node in nodes {
-            if let drawableNode = node as? any DrawableNode {
-                let vertices = drawableNode.generateUnifiedVertices()
+        // Stage 2: Apply world transforms using visitor pattern
+        var transformApplier = TransformApplierVisitor(baseVertices: baseVertices)
+        let transformedVertices = transformApplier.applyTransformsTo(nodes)
 
-                // Apply world transform to vertices if present
-                let transform = node.getWorldTransform()
-                let transformedVertices = vertices.map { vertex in
-                    var transformedVertex = vertex
-                    let transformedPosition = transform * SIMD4<Float>(vertex.position.x, vertex.position.y, vertex.position.z, 1.0)
-                    transformedVertex.position = SIMD3<Float>(transformedPosition.x, transformedPosition.y, transformedPosition.z)
-                    return transformedVertex
-                }
-
-                allVertices.append(contentsOf: transformedVertices)
-            }
-        }
-
-        return allVertices
+        return transformedVertices
     }
 
     private func generateDrawCommands(
