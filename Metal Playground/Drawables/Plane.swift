@@ -8,17 +8,30 @@
 import Foundation
 import simd
 
-struct Plane: DrawableNode, AbstractDrawableNode {
+class Plane: DrawableNode, AbstractDrawableNode {
     typealias VertexType = PlotDSLVertex
-    
+
     let n: SIMD3<Float>
     let offset: SIMD3<Float>
     let size: Float  // Side length of plane square
-    
+
+    // Transform data (private, only accessible through API)
+    private var worldTransform: simd_float4x4?
+
     init(normal: Vector3D, offset: Vector3D, size: Float = 1.0) {
         self.n = normalize(normal.simd)
         self.offset = SIMD3<Float>(offset)
         self.size = size
+    }
+
+    // Composable transform API implementation
+    func applyTransform(_ transform: simd_float4x4) {
+        let current = worldTransform ?? matrix_identity_float4x4
+        worldTransform = current * transform
+    }
+
+    func getWorldTransform() -> simd_float4x4 {
+        return worldTransform ?? matrix_identity_float4x4
     }
     
     func generateVertices() -> [PlotDSLVertex] {
@@ -63,7 +76,7 @@ struct Plane: DrawableNode, AbstractDrawableNode {
 
     var children: [any AbstractDrawableNode] { return [] }
 
-    func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result {
+    func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result? {
         return visitor.visitSelf(self)
     }
 

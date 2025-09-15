@@ -5,6 +5,9 @@
 //  Created by Claude on 2025-09-13.
 //
 
+import simd
+import Metal
+
 @resultBuilder
 struct PlotBuilder {
     static func buildBlock(_ elements: any DrawableNode...) -> [any DrawableNode] {
@@ -28,20 +31,29 @@ struct PlotBuilder {
     }
 }
 
-struct Plot: AbstractDrawableNode {
+class Plot {
     let elements: [any DrawableNode]
 
-    var children: [any AbstractDrawableNode] {
-        // Convert DrawableNodes to AbstractDrawableNodes
-        return elements.compactMap { $0 as? AbstractDrawableNode }
-    }
+    // Scene rendering system
+    private lazy var sceneRenderer: SceneRenderer = {
+        SceneRenderer(drawables: elements)
+    }()
 
     init(@PlotBuilder content: () -> [any DrawableNode]) {
         self.elements = content()
     }
 
-    func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result {
-        return visitor.visitSelf(self)
+    // Rendering API that delegates to SceneRenderer
+    func setupPipeline(device: MTLDevice) throws {
+        try sceneRenderer.initPipeline(for: device)
+    }
+
+    func setupBuffers(device: MTLDevice) throws {
+        try sceneRenderer.initBuffers(for: device)
+    }
+
+    func render(with encoder: MTLRenderCommandEncoder) {
+        sceneRenderer.draw(with: encoder)
     }
     
     func generateAllVertices() -> [PlotDSLVertex] {
@@ -50,26 +62,5 @@ struct Plot: AbstractDrawableNode {
     
     func totalVertexCount() -> Int {
         return elements.reduce(0) { $0 + $1.vertexCount() }
-    }
-
-    func isEqual(to other: Plot) -> Bool {
-        guard self.elements.count == other.elements.count else {
-            return false
-        }
-
-        // Compare each element (this is a bit complex since elements are DrawableNodes)
-        for (selfElement, otherElement) in zip(self.elements, other.elements) {
-            // Cast both to AbstractDrawableNode for comparison
-            guard let selfDrawable = selfElement as? AbstractDrawableNode,
-                  let otherDrawable = otherElement as? AbstractDrawableNode else {
-                return false
-            }
-
-            if !selfDrawable.isEqual(to: otherDrawable) {
-                return false
-            }
-        }
-
-        return true
     }
 }
