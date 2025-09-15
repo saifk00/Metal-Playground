@@ -37,9 +37,7 @@ class DrawableCompiler {
     }
 
     private func collectAllNodes(_ rootNode: any AbstractDrawableNode) -> [any AbstractDrawableNode] {
-        var collector = DrawableCollectorVisitor()
-        let _ = collector.visit(rootNode)
-        return collector.getCollectedNodes()
+        return DrawableCollectorVisitor.collectDrawables(from: rootNode)
     }
 
     private func groupNodesByPipeline(_ nodes: [any AbstractDrawableNode]) -> [RenderGroup] {

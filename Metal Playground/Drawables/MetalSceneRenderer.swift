@@ -100,12 +100,10 @@ class MetalSceneRenderer {
 
     private func generateVertices(for nodes: [any AbstractDrawableNode]) -> [PlotDSLVertex] {
         // Stage 1: Generate and store base vertices using visitor pattern
-        let vertexGenerator = VertexGeneratorVisitor()
-        vertexGenerator.generateVerticesFor(nodes)
+        VertexGeneratorVisitor.generateVertices(for: nodes)
 
         // Stage 2: Apply world transforms to stored vertices using visitor pattern
-        let transformApplier = TransformApplierVisitor()
-        transformApplier.applyTransformsTo(nodes)
+        TransformApplierVisitor.applyTransforms(to: nodes)
 
         // Stage 3: Collect the transformed vertices from all nodes
         var allTransformedVertices: [PlotDSLVertex] = []

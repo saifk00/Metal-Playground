@@ -48,4 +48,19 @@ struct DrawableCollectorVisitor: AbstractDrawableVisitor {
     func getCollectedNodes() -> [any AbstractDrawableNode] {
         return collectedNodes
     }
+
+    // Static convenience methods
+    static func collectDrawables(from nodes: [any AbstractDrawableNode]) -> [any AbstractDrawableNode] {
+        var collector = DrawableCollectorVisitor()
+        for node in nodes {
+            let _ = collector.visit(node)
+        }
+        return collector.getCollectedNodes()
+    }
+
+    static func collectDrawables(from node: any AbstractDrawableNode) -> [any AbstractDrawableNode] {
+        var collector = DrawableCollectorVisitor()
+        let _ = collector.visit(node)
+        return collector.getCollectedNodes()
+    }
 }

@@ -41,4 +41,15 @@ struct TransformApplierVisitor: AbstractDrawableVisitor {
             let _ = node.accept(self)
         }
     }
+
+    // Static convenience methods
+    static func applyTransforms(to nodes: [any AbstractDrawableNode]) {
+        let applier = TransformApplierVisitor()
+        applier.applyTransformsTo(nodes)
+    }
+
+    static func applyTransforms(to node: any AbstractDrawableNode) {
+        let applier = TransformApplierVisitor()
+        let _ = node.accept(applier)
+    }
 }

@@ -42,4 +42,15 @@ struct VertexGeneratorVisitor: AbstractDrawableVisitor {
             let _ = node.accept(self)
         }
     }
+
+    // Static convenience methods
+    static func generateVertices(for nodes: [any AbstractDrawableNode]) {
+        let generator = VertexGeneratorVisitor()
+        generator.generateVerticesFor(nodes)
+    }
+
+    static func generateVertices(for node: any AbstractDrawableNode) {
+        let generator = VertexGeneratorVisitor()
+        let _ = node.accept(generator)
+    }
 }
