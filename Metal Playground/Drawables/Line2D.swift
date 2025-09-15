@@ -17,6 +17,9 @@ class Line2D: DrawableNode, AbstractDrawableNode {
     // Transform data (private, only accessible through API)
     private var worldTransform: simd_float4x4?
 
+    // Vertex storage (single-set with safety constraints)
+    private var storedVertices: [PlotDSLVertex]?
+
     init(from: Point, to: Point) {
         self.from = from
         self.to = to
@@ -49,6 +52,35 @@ class Line2D: DrawableNode, AbstractDrawableNode {
 
     func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result? {
         return visitor.visitSelf(self)
+    }
+
+    // Vertex storage API implementation
+    func setVertices(_ vertices: [PlotDSLVertex]) throws {
+        guard storedVertices == nil else {
+            throw VertexStorageError.verticesAlreadySet
+        }
+        storedVertices = vertices
+    }
+
+    func getVertices() -> [PlotDSLVertex]? {
+        return storedVertices
+    }
+
+    func hasVertices() -> Bool {
+        return storedVertices != nil
+    }
+
+    func applyVertexTransform(_ transform: simd_float4x4) {
+        guard var vertices = storedVertices else { return }
+
+        vertices = vertices.map { vertex in
+            var transformedVertex = vertex
+            let transformedPosition = transform * SIMD4<Float>(vertex.position.x, vertex.position.y, vertex.position.z, 1.0)
+            transformedVertex.position = SIMD3<Float>(transformedPosition.x, transformedPosition.y, transformedPosition.z)
+            return transformedVertex
+        }
+
+        storedVertices = vertices
     }
 
     func isEqual(to other: Line2D) -> Bool {

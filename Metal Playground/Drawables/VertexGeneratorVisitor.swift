@@ -8,34 +8,38 @@
 import Foundation
 
 struct VertexGeneratorVisitor: AbstractDrawableVisitor {
-    typealias Result = [PlotDSLVertex]
+    typealias Result = Void
 
-    func visitSelf(_ plane: Plane) -> [PlotDSLVertex]? {
-        return plane.generateUnifiedVertices()
+    func visitSelf(_ plane: Plane) -> Void? {
+        guard !plane.hasVertices() else { return nil }
+        let vertices = plane.generateUnifiedVertices()
+        try? plane.setVertices(vertices)
+        return nil
     }
 
-    func visitSelf(_ planeNode: PlaneNode) -> [PlotDSLVertex]? {
-        return planeNode.generateUnifiedVertices()
+    func visitSelf(_ planeNode: PlaneNode) -> Void? {
+        // PlaneNode doesn't implement DrawableNode, so no vertex generation needed
+        return nil
     }
 
-    func visitSelf(_ line: Line3D) -> [PlotDSLVertex]? {
-        return line.generateUnifiedVertices()
+    func visitSelf(_ line: Line3D) -> Void? {
+        guard !line.hasVertices() else { return nil }
+        let vertices = line.generateUnifiedVertices()
+        try? line.setVertices(vertices)
+        return nil
     }
 
-    func visitSelf(_ line: Line2D) -> [PlotDSLVertex]? {
-        return line.generateUnifiedVertices()
+    func visitSelf(_ line: Line2D) -> Void? {
+        guard !line.hasVertices() else { return nil }
+        let vertices = line.generateUnifiedVertices()
+        try? line.setVertices(vertices)
+        return nil
     }
 
-    // Collect vertices from all drawable nodes in scene graph
-    func collectVerticesFrom(_ nodes: [any AbstractDrawableNode]) -> [PlotDSLVertex] {
-        var allVertices: [PlotDSLVertex] = []
-
+    // Generate and store vertices in all drawable nodes in scene graph
+    func generateVerticesFor(_ nodes: [any AbstractDrawableNode]) {
         for node in nodes {
-            if let vertices = node.accept(self) {
-                allVertices.append(contentsOf: vertices)
-            }
+            let _ = node.accept(self)
         }
-
-        return allVertices
     }
 }
