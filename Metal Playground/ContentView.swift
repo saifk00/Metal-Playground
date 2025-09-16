@@ -35,10 +35,11 @@ enum Demo: String, CaseIterable, Identifiable {
     case Triangle
     case Quad
     case Plot
+    case SceneBasedPlot
 }
 
 struct Runnable {
-    let pipeline: MTLRenderPipelineState
+    let pipeline: MTLRenderPipelineState?
     let runner: DemoRunner
 }
 

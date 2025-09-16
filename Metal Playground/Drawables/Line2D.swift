@@ -20,6 +20,9 @@ class Line2D: DrawableNode, AbstractDrawableNode {
     // Vertex storage (single-set with safety constraints)
     private var storedVertices: [PlotDSLVertex]?
 
+    // Render grouping (for GPU state optimization)
+    var renderGroupID: UUID?
+
     init(from: Point, to: Point) {
         self.from = from
         self.to = to
@@ -50,7 +53,7 @@ class Line2D: DrawableNode, AbstractDrawableNode {
 
     var children: [any AbstractDrawableNode] { return [] }
 
-    func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result? {
+    func accept<V: AbstractDrawableVisitor>(_ visitor: inout V) -> V.Result? {
         return visitor.visitSelf(self)
     }
 

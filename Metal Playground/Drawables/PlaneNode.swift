@@ -20,12 +20,15 @@ class PlaneNode: AbstractDrawableNode {
     // Vertex storage (single-set with safety constraints)
     private var storedVertices: [PlotDSLVertex]?
 
+    // Render grouping (for GPU state optimization)
+    var renderGroupID: UUID?
+
     init(width: Float, height: Float) {
         self.width = width
         self.height = height
     }
 
-    func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result? {
+    func accept<V: AbstractDrawableVisitor>(_ visitor: inout V) -> V.Result? {
         return visitor.visitSelf(self)
     }
 

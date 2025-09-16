@@ -17,20 +17,20 @@ struct TransformPipelineExample {
         let nodes: [any AbstractDrawableNode] = [plane1, plane2]
 
         // Create transform visitors
-        let rotationVisitor = PlaneRotationVisitor(angle: .pi/4, axis: [0, 0, 1])
+        var rotationVisitor = PlaneRotationVisitor(angle: .pi/4, axis: [0, 0, 1])
         // Could add more visitors like:
         // let scaleVisitor = PlaneScaleVisitor(scale: 2.0)
         // let translationVisitor = PlaneTranslationVisitor(offset: [1, 0, 0])
 
         // Apply transforms - each visitor only affects nodes it cares about
         for node in nodes {
-            node.accept(rotationVisitor)
+            let _ = node.accept(&rotationVisitor)
         }
 
         // Transforms are composable - applying another rotation multiplies with existing
-        let secondRotation = PlaneRotationVisitor(angle: .pi/6, axis: [1, 0, 0])
+        var secondRotation = PlaneRotationVisitor(angle: .pi/6, axis: [1, 0, 0])
         for node in nodes {
-            node.accept(secondRotation)
+            let _ = node.accept(&secondRotation)
         }
 
         // Access final transforms

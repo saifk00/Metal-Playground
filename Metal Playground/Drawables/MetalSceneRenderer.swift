@@ -7,6 +7,7 @@
 
 import Metal
 import simd
+import Foundation
 
 class MetalSceneRenderer {
     private var device: MTLDevice?
@@ -16,7 +17,7 @@ class MetalSceneRenderer {
         self.device = device
 
         // Create pipeline states for each unique descriptor in the scene
-        for renderGroup in scene.renderGroups {
+        for (_, renderGroup) in scene.renderGroups {
             if pipelineStates[renderGroup.pipelineDescriptor] == nil {
                 let pipelineState = try createPipelineState(
                     for: renderGroup.pipelineDescriptor,
@@ -33,11 +34,12 @@ class MetalSceneRenderer {
         }
 
         // Generate vertex buffers and draw commands for each render group
-        for i in 0..<scene.renderGroups.count {
-            var renderGroup = scene.renderGroups[i]
+        for (groupID, var renderGroup) in scene.renderGroups {
+            // Collect all nodes that belong to this render group
+            let nodesInGroup = collectNodesForGroup(groupID, from: scene.rootNode)
 
             // Generate vertices for all nodes in this group
-            let allVertices = generateVertices(for: renderGroup.nodes)
+            let allVertices = generateVertices(for: nodesInGroup)
 
             // Create GPU buffer
             if !allVertices.isEmpty {
@@ -50,17 +52,17 @@ class MetalSceneRenderer {
 
                 // Generate draw commands based on vertex data
                 renderGroup.drawCommands = generateDrawCommands(
-                    for: renderGroup.nodes,
+                    for: nodesInGroup,
                     vertices: allVertices
                 )
             }
 
-            scene.renderGroups[i] = renderGroup
+            scene.renderGroups[groupID] = renderGroup
         }
     }
 
     func draw(scene: CompiledScene, with encoder: MTLRenderCommandEncoder) {
-        for renderGroup in scene.renderGroups {
+        for (_, renderGroup) in scene.renderGroups {
             guard let pipelineState = pipelineStates[renderGroup.pipelineDescriptor],
                   let vertexBuffer = renderGroup.vertexBuffer,
                   let drawCommands = renderGroup.drawCommands else {
@@ -82,6 +84,11 @@ class MetalSceneRenderer {
         }
     }
 
+    private func collectNodesForGroup(_ groupID: UUID, from rootNode: any AbstractDrawableNode) -> [any AbstractDrawableNode] {
+        let allNodes = DrawableCollectorVisitor.collectDrawables(from: rootNode)
+        return allNodes.filter { $0.renderGroupID == groupID }
+    }
+
     private func createPipelineState(
         for descriptor: DrawablePipelineDescriptor,
         device: MTLDevice
@@ -91,9 +98,21 @@ class MetalSceneRenderer {
         }
 
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
-        pipelineDescriptor.vertexFunction = library.makeFunction(name: descriptor.vertexFunction)
-        pipelineDescriptor.fragmentFunction = library.makeFunction(name: descriptor.fragmentFunction)
+
+        guard let vertexFunction = library.makeFunction(name: descriptor.vertexFunction) else {
+            throw MetalSceneRendererError.shaderFunctionNotFound(descriptor.vertexFunction)
+        }
+
+        guard let fragmentFunction = library.makeFunction(name: descriptor.fragmentFunction) else {
+            throw MetalSceneRendererError.shaderFunctionNotFound(descriptor.fragmentFunction)
+        }
+
+        pipelineDescriptor.vertexFunction = vertexFunction
+        pipelineDescriptor.fragmentFunction = fragmentFunction
         pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+
+        // Set vertex descriptor for PlotDSLVertex
+        pipelineDescriptor.vertexDescriptor = PlotDSLVertex.vertexDescriptor()
 
         return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
     }
@@ -128,8 +147,19 @@ class MetalSceneRenderer {
                 let vertexCount = drawableNode.vertexCount()
 
                 if vertexCount > 0 {
+                    // Choose primitive type based on node type
+                    let primitiveType: MTLPrimitiveType
+                    switch node {
+                    case is Line2D, is Line3D:
+                        primitiveType = .line
+                    case is Plane, is PlaneNode:
+                        primitiveType = .triangle
+                    default:
+                        primitiveType = .triangle
+                    }
+
                     commands.append(DrawCommand(
-                        primitiveType: .triangle,
+                        primitiveType: primitiveType,
                         vertexStart: vertexOffset,
                         vertexCount: vertexCount
                     ))
@@ -145,4 +175,5 @@ class MetalSceneRenderer {
 enum MetalSceneRendererError: Error {
     case deviceNotSet
     case libraryCreationFailed
+    case shaderFunctionNotFound(String)
 }

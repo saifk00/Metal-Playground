@@ -21,6 +21,9 @@ class Plane: DrawableNode, AbstractDrawableNode {
     // Vertex storage (single-set with safety constraints)
     private var storedVertices: [PlotDSLVertex]?
 
+    // Render grouping (for GPU state optimization)
+    var renderGroupID: UUID?
+
     init(normal: Vector3D, offset: Vector3D, size: Float = 1.0) {
         self.n = normalize(normal.simd)
         self.offset = SIMD3<Float>(offset)
@@ -79,7 +82,7 @@ class Plane: DrawableNode, AbstractDrawableNode {
 
     var children: [any AbstractDrawableNode] { return [] }
 
-    func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result? {
+    func accept<V: AbstractDrawableVisitor>(_ visitor: inout V) -> V.Result? {
         return visitor.visitSelf(self)
     }
 

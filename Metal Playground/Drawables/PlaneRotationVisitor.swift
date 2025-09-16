@@ -36,10 +36,10 @@ struct PlaneRotationVisitor: AbstractDrawableVisitor {
 // Example usage in pipeline
 struct TransformPipeline {
     func applyRotations(to nodes: [any AbstractDrawableNode], angle: Float = .pi/4) {
-        let rotationVisitor = PlaneRotationVisitor(angle: angle, axis: [0, 0, 1])
+        var rotationVisitor = PlaneRotationVisitor(angle: angle, axis: [0, 0, 1])
 
         for node in nodes {
-            let _ = node.accept(rotationVisitor)
+            let _ = node.accept(&rotationVisitor)
         }
     }
 }

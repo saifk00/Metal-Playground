@@ -34,7 +34,7 @@ struct TriangleDemo : DemoRunner {
         return triangleVertices
     }
     
-    func initPipeline(for device: MTLDevice) -> MTLRenderPipelineState {
+    func initPipeline(for device: MTLDevice) -> MTLRenderPipelineState? {
         let pipeline = MTLRenderPipelineDescriptor()
 
         // Q: why do you need a device to make a library?

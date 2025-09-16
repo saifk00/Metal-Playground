@@ -21,14 +21,14 @@ struct RenderPipelineCoordinator {
 
     private func applyTransforms(_ nodes: [any AbstractDrawableNode]) {
         // Apply multiple transform visitors in sequence
-        let rotationVisitor = PlaneRotationVisitor(
+        var rotationVisitor = PlaneRotationVisitor(
             angle: .pi / 4,
             axis: [0, 0, 1]
         )
 
         // Visit all nodes - visitors will only transform the ones they care about
         for node in nodes {
-            node.accept(rotationVisitor)
+            let _ = node.accept(&rotationVisitor)
         }
 
         // Could apply more visitors in sequence

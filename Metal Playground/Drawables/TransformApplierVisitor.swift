@@ -36,20 +36,20 @@ struct TransformApplierVisitor: AbstractDrawableVisitor {
     }
 
     // Apply world transforms to stored vertices in all nodes
-    func applyTransformsTo(_ nodes: [any AbstractDrawableNode]) {
+    mutating func applyTransformsTo(_ nodes: [any AbstractDrawableNode]) {
         for node in nodes {
-            let _ = node.accept(self)
+            let _ = node.accept(&self)
         }
     }
 
     // Static convenience methods
     static func applyTransforms(to nodes: [any AbstractDrawableNode]) {
-        let applier = TransformApplierVisitor()
+        var applier = TransformApplierVisitor()
         applier.applyTransformsTo(nodes)
     }
 
     static func applyTransforms(to node: any AbstractDrawableNode) {
-        let applier = TransformApplierVisitor()
-        let _ = node.accept(applier)
+        var applier = TransformApplierVisitor()
+        let _ = node.accept(&applier)
     }
 }

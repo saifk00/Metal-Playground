@@ -40,7 +40,7 @@ struct DrawableCollectorVisitor: AbstractDrawableVisitor {
         }
 
         // Then visit self (which will add to collection if it's a drawable)
-        let _ = node.accept(self)
+        let _ = node.accept(&self)
 
         return collectedNodes
     }

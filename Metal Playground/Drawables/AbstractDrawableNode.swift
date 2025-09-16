@@ -6,6 +6,7 @@
 //
 
 import simd
+import Foundation
 
 enum VertexStorageError: Error {
     case verticesAlreadySet
@@ -15,7 +16,7 @@ enum VertexStorageError: Error {
 protocol AbstractDrawableNode: AnyObject {
     var children: [any AbstractDrawableNode] { get }
 
-    func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result?
+    func accept<V: AbstractDrawableVisitor>(_ visitor: inout V) -> V.Result?
 
     // Composable transform API
     func applyTransform(_ transform: simd_float4x4)
@@ -26,4 +27,7 @@ protocol AbstractDrawableNode: AnyObject {
     func getVertices() -> [PlotDSLVertex]?
     func hasVertices() -> Bool
     func applyVertexTransform(_ transform: simd_float4x4)
+
+    // Render grouping API - for GPU state optimization
+    var renderGroupID: UUID? { get set }
 }

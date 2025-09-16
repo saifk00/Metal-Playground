@@ -6,22 +6,24 @@
 //
 
 import Metal
+import Foundation
 
 struct CompiledScene {
-    var renderGroups: [RenderGroup]
+    let rootNode: any AbstractDrawableNode
+    var renderGroups: [UUID: RenderGroup] = [:]
 }
 
 struct RenderGroup {
+    let groupID: UUID
     let pipelineDescriptor: DrawablePipelineDescriptor
-    let nodes: [any AbstractDrawableNode]
 
     // GPU resources (set during buffer initialization)
     var vertexBuffer: MTLBuffer?
     var drawCommands: [DrawCommand]?
 
-    init(pipelineDescriptor: DrawablePipelineDescriptor, nodes: [any AbstractDrawableNode]) {
+    init(groupID: UUID, pipelineDescriptor: DrawablePipelineDescriptor) {
+        self.groupID = groupID
         self.pipelineDescriptor = pipelineDescriptor
-        self.nodes = nodes
     }
 }
 

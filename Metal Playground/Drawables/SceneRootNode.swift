@@ -6,6 +6,7 @@
 //
 
 import simd
+import Foundation
 
 class SceneRootNode: AbstractDrawableNode {
     private let childNodes: [any AbstractDrawableNode]
@@ -16,9 +17,12 @@ class SceneRootNode: AbstractDrawableNode {
     // Vertex storage (single-set with safety constraints)
     private var storedVertices: [PlotDSLVertex]?
 
+    // Render grouping (for GPU state optimization)
+    var renderGroupID: UUID?
+
     init(children: [any DrawableNode]) {
         // Convert DrawableNodes to AbstractDrawableNodes
-        self.childNodes = children.compactMap { $0 as? AbstractDrawableNode }
+        self.childNodes = children.map { $0 as AbstractDrawableNode }
     }
 
     var children: [any AbstractDrawableNode] { childNodes }
@@ -33,7 +37,7 @@ class SceneRootNode: AbstractDrawableNode {
         return worldTransform ?? matrix_identity_float4x4
     }
 
-    func accept<V: AbstractDrawableVisitor>(_ visitor: V) -> V.Result? {
+    func accept<V: AbstractDrawableVisitor>(_ visitor: inout V) -> V.Result? {
         return visitor.visitSelf(self)
     }
 
@@ -67,9 +71,3 @@ class SceneRootNode: AbstractDrawableNode {
     }
 }
 
-// Add SceneRootNode support to visitors
-extension AbstractDrawableVisitor {
-    func visitSelf(_ sceneRoot: SceneRootNode) -> Result? {
-        return nil // Default implementation - most visitors ignore the root
-    }
-}

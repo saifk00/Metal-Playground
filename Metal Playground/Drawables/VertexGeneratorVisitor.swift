@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import simd
 
 struct VertexGeneratorVisitor: AbstractDrawableVisitor {
     typealias Result = Void
@@ -37,20 +38,20 @@ struct VertexGeneratorVisitor: AbstractDrawableVisitor {
     }
 
     // Generate and store vertices in all drawable nodes in scene graph
-    func generateVerticesFor(_ nodes: [any AbstractDrawableNode]) {
+    mutating func generateVerticesFor(_ nodes: [any AbstractDrawableNode]) {
         for node in nodes {
-            let _ = node.accept(self)
+            let _ = node.accept(&self)
         }
     }
 
     // Static convenience methods
     static func generateVertices(for nodes: [any AbstractDrawableNode]) {
-        let generator = VertexGeneratorVisitor()
+        var generator = VertexGeneratorVisitor()
         generator.generateVerticesFor(nodes)
     }
 
     static func generateVertices(for node: any AbstractDrawableNode) {
-        let generator = VertexGeneratorVisitor()
-        let _ = node.accept(generator)
+        var generator = VertexGeneratorVisitor()
+        let _ = node.accept(&generator)
     }
 }
