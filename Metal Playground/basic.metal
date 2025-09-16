@@ -127,7 +127,7 @@ fragment float4 fragment_main(PlotDSLVertexOutput in [[stage_in]]) {
     return in.color;
 }
 
-// Line vertex shader
+// Line vertex shader (fallback - not used since lines now use plot_vertex_shader)
 vertex PlotDSLVertexOutput line_vertex(PlotDSLVertexInput in [[stage_in]]) {
     PlotDSLVertexOutput out;
     out.position = float4(in.position, 1.0);

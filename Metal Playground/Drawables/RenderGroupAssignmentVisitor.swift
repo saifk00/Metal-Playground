@@ -61,18 +61,18 @@ struct RenderGroupAssignmentVisitor: AbstractDrawableVisitor {
         switch node {
         case is Plane:
             return DrawablePipelineDescriptor(
-                vertexFunction: "vertex_main",
-                fragmentFunction: "fragment_main"
+                vertexFunction: "plot_vertex_shader",
+                fragmentFunction: "plot_fragment_shader"
             )
         case is PlaneNode:
             return DrawablePipelineDescriptor(
-                vertexFunction: "vertex_main",
-                fragmentFunction: "fragment_main"
+                vertexFunction: "plot_vertex_shader",
+                fragmentFunction: "plot_fragment_shader"
             )
         case is Line3D, is Line2D:
             return DrawablePipelineDescriptor(
-                vertexFunction: "line_vertex",
-                fragmentFunction: "line_fragment"
+                vertexFunction: "plot_vertex_shader",
+                fragmentFunction: "plot_fragment_shader"
             )
         default:
             return DrawablePipelineDescriptor(
