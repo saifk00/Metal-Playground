@@ -1,18 +1,15 @@
 //
-//  Line2D.swift
+//  SceneRootNode.swift
 //  Metal Playground
 //
-//  Created by Claude on 2025-09-13.
+//  Created by Claude on 2025-09-15.
 //
 
-import Foundation
 import simd
+import Foundation
 
-class Line2D: DrawableNode, AbstractDrawableNode {
-    typealias VertexType = PlotDSLVertex
-
-    let from: Point
-    let to: Point
+class SceneRootNode: AbstractDrawableNode {
+    private let childNodes: [any AbstractDrawableNode]
 
     // Transform data (private, only accessible through API)
     private var worldTransform: simd_float4x4?
@@ -23,10 +20,12 @@ class Line2D: DrawableNode, AbstractDrawableNode {
     // Render grouping (for GPU state optimization)
     var renderGroupID: UUID?
 
-    init(from: Point, to: Point) {
-        self.from = from
-        self.to = to
+    init(children: [any DrawableNode]) {
+        // Convert DrawableNodes to AbstractDrawableNodes
+        self.childNodes = children.map { $0 as AbstractDrawableNode }
     }
+
+    var children: [any AbstractDrawableNode] { childNodes }
 
     // Composable transform API implementation
     func applyTransform(_ transform: simd_float4x4) {
@@ -38,26 +37,11 @@ class Line2D: DrawableNode, AbstractDrawableNode {
         return worldTransform ?? matrix_identity_float4x4
     }
 
-    func generateVertices() -> [PlotDSLVertex] {
-        return [
-            PlotDSLVertex(SIMD3(from.x, from.y, 0.0)),
-            PlotDSLVertex(SIMD3(to.x, to.y, 0.0))
-        ]
-    }
-
-    func generateUnifiedVertices() -> [PlotDSLVertex] {
-        return generateVertices()
-    }
-
-    func vertexCount() -> Int { return 2 }
-
-    var children: [any AbstractDrawableNode] { return [] }
-
     func accept<V: AbstractDrawableVisitor>(_ visitor: inout V) -> V.Result? {
         return visitor.visitSelf(self)
     }
 
-    // Vertex storage API implementation
+    // Vertex storage API implementation (SceneRootNode typically doesn't store vertices)
     func setVertices(_ vertices: [PlotDSLVertex]) throws {
         guard storedVertices == nil else {
             throw VertexStorageError.verticesAlreadySet
@@ -85,8 +69,5 @@ class Line2D: DrawableNode, AbstractDrawableNode {
 
         storedVertices = vertices
     }
-
-    func isEqual(to other: Line2D) -> Bool {
-        return self.from == other.from && self.to == other.to
-    }
 }
+

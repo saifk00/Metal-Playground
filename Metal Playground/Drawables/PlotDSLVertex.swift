@@ -10,7 +10,7 @@ import simd
 import MetalKit
 
 struct PlotDSLVertex : CustomVertexStruct {
-    let position : SIMD3<Float>
+    var position : SIMD3<Float>
     let color : SIMD4<Float>
     
     init(_ position: SIMD3<Float>, color: SIMD4<Float> = SIMD4<Float>(1, 1, 1, 1)) {

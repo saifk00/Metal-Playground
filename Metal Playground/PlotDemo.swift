@@ -55,7 +55,7 @@ struct PlotDemo: DemoRunner {
         }
     }
     
-    func initPipeline(for device: MTLDevice) -> MTLRenderPipelineState {
+    func initPipeline(for device: MTLDevice) -> MTLRenderPipelineState? {
         guard let library = device.makeDefaultLibrary() else {
             fatalError("Could not create default library")
         }

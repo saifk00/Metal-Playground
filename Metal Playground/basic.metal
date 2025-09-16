@@ -102,3 +102,68 @@ fragment half4 fragment_shader(float4 in [[ position ]]) {
     float2 st = in.xy / float2(500., 500.);
     return half4(st.x, st.y, 0.0, 1.0);
 }
+
+// Vertex input structure for PlotDSL vertices
+struct PlotDSLVertexInput {
+    float3 position [[attribute(0)]];
+    float4 color [[attribute(1)]];
+};
+
+struct PlotDSLVertexOutput {
+    float4 position [[position]];
+    float4 color;
+};
+
+// Main vertex shader for planes and general geometry
+vertex PlotDSLVertexOutput vertex_main(PlotDSLVertexInput in [[stage_in]]) {
+    PlotDSLVertexOutput out;
+    out.position = float4(in.position, 1.0);
+    out.color = in.color;
+    return out;
+}
+
+// Main fragment shader for planes and general geometry
+fragment float4 fragment_main(PlotDSLVertexOutput in [[stage_in]]) {
+    return in.color;
+}
+
+// Line vertex shader (fallback - not used since lines now use plot_vertex_shader)
+vertex PlotDSLVertexOutput line_vertex(PlotDSLVertexInput in [[stage_in]]) {
+    PlotDSLVertexOutput out;
+    out.position = float4(in.position, 1.0);
+    out.color = in.color;
+    return out;
+}
+
+// Line fragment shader - slightly brighter for lines
+fragment float4 line_fragment(PlotDSLVertexOutput in [[stage_in]]) {
+    // Make lines slightly brighter/more saturated
+    float4 color = in.color;
+    color.rgb = min(color.rgb * 1.2, 1.0);
+    return color;
+}
+
+// Default vertex shader fallback
+vertex PlotDSLVertexOutput default_vertex(PlotDSLVertexInput in [[stage_in]]) {
+    PlotDSLVertexOutput out;
+    out.position = float4(in.position, 1.0);
+    out.color = in.color;
+    return out;
+}
+
+// Default fragment shader fallback - magenta for debugging
+fragment float4 default_fragment(PlotDSLVertexOutput in [[stage_in]]) {
+    return float4(1.0, 0.0, 1.0, 1.0); // Bright magenta to indicate missing shader
+}
+
+// Basic shaders for DrawablePipelineLibrary
+vertex PlotDSLVertexOutput basicVertexShader(PlotDSLVertexInput in [[stage_in]]) {
+    PlotDSLVertexOutput out;
+    out.position = float4(in.position, 1.0);
+    out.color = in.color;
+    return out;
+}
+
+fragment float4 basicFragmentShader(PlotDSLVertexOutput in [[stage_in]]) {
+    return in.color;
+}

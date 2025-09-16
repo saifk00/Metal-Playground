@@ -1,18 +1,18 @@
 //
-//  Line2D.swift
+//  PlaneNode.swift
 //  Metal Playground
 //
-//  Created by Claude on 2025-09-13.
+//  Created by Claude on 2025-09-15.
 //
 
-import Foundation
 import simd
+import Metal
 
-class Line2D: DrawableNode, AbstractDrawableNode {
-    typealias VertexType = PlotDSLVertex
-
-    let from: Point
-    let to: Point
+class PlaneNode: AbstractDrawableNode {
+    // Core immutable data
+    let width: Float
+    let height: Float
+    var children: [any AbstractDrawableNode] { [] }
 
     // Transform data (private, only accessible through API)
     private var worldTransform: simd_float4x4?
@@ -23,9 +23,13 @@ class Line2D: DrawableNode, AbstractDrawableNode {
     // Render grouping (for GPU state optimization)
     var renderGroupID: UUID?
 
-    init(from: Point, to: Point) {
-        self.from = from
-        self.to = to
+    init(width: Float, height: Float) {
+        self.width = width
+        self.height = height
+    }
+
+    func accept<V: AbstractDrawableVisitor>(_ visitor: inout V) -> V.Result? {
+        return visitor.visitSelf(self)
     }
 
     // Composable transform API implementation
@@ -36,25 +40,6 @@ class Line2D: DrawableNode, AbstractDrawableNode {
 
     func getWorldTransform() -> simd_float4x4 {
         return worldTransform ?? matrix_identity_float4x4
-    }
-
-    func generateVertices() -> [PlotDSLVertex] {
-        return [
-            PlotDSLVertex(SIMD3(from.x, from.y, 0.0)),
-            PlotDSLVertex(SIMD3(to.x, to.y, 0.0))
-        ]
-    }
-
-    func generateUnifiedVertices() -> [PlotDSLVertex] {
-        return generateVertices()
-    }
-
-    func vertexCount() -> Int { return 2 }
-
-    var children: [any AbstractDrawableNode] { return [] }
-
-    func accept<V: AbstractDrawableVisitor>(_ visitor: inout V) -> V.Result? {
-        return visitor.visitSelf(self)
     }
 
     // Vertex storage API implementation
@@ -85,8 +70,17 @@ class Line2D: DrawableNode, AbstractDrawableNode {
 
         storedVertices = vertices
     }
-
-    func isEqual(to other: Line2D) -> Bool {
-        return self.from == other.from && self.to == other.to
-    }
 }
+
+// Note: The progressive interface approach requires class-based nodes
+// and integrated property storage. The AssociatedStorage approach
+// cannot be implemented in extensions. This would need to be
+// implemented within the class definition itself.
+
+// Example of how this would work (conceptual):
+// class PlaneNode: BufferedDrawableNode {
+//     @AssociatedStorage var worldTransform: simd_float4x4?
+//     @AssociatedStorage var pipelineDescriptor: DrawablePipelineDescriptor?
+//     @AssociatedStorage var vertexRange: (offset: Int, count: Int)?
+//     @AssociatedStorage var gpuBuffer: MTLBuffer?
+// }

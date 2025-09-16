@@ -41,9 +41,21 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
             cb.commit()
             return
         }
-        
-        enc.setRenderPipelineState(runnable.pipeline)
-        runnable.runner.draw(with: enc)
+
+        if runnable.runner.managesOwnPipelineStates {
+            // Demo manages its own pipeline states
+            runnable.runner.drawWithPipelineManagement(with: enc, device: device)
+        } else {
+            // Traditional demo - set pipeline state and draw
+            guard let pipeline = runnable.pipeline else {
+                enc.endEncoding()
+                cb.present(drawable)
+                cb.commit()
+                return
+            }
+            enc.setRenderPipelineState(pipeline)
+            runnable.runner.draw(with: enc)
+        }
         
         enc.endEncoding()
         
@@ -76,9 +88,14 @@ class MetalRenderDemo : NSObject, MTKViewDelegate {
         var plotDemo = PlotDemo()
         let plotPipeline = plotDemo.initPipeline(for: device)
         plotDemo.initBuffers(for: device)
-        
+
+        var sceneBasedPlotDemo = SceneBasedPlotDemo()
+        let sceneBasedPlotPipeline = sceneBasedPlotDemo.initPipeline(for: device)
+        sceneBasedPlotDemo.initBuffers(for: device)
+
         demoCache[.Triangle] = Runnable(pipeline: trianglePipeline, runner: triangleDemo)
         demoCache[.Quad] = Runnable(pipeline: flatQuadPipeline, runner: flatQuadDemo)
         demoCache[.Plot] = Runnable(pipeline: plotPipeline, runner: plotDemo)
+        demoCache[.SceneBasedPlot] = Runnable(pipeline: sceneBasedPlotPipeline, runner: sceneBasedPlotDemo)
     }
 }

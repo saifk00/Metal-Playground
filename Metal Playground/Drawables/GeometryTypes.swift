@@ -13,7 +13,7 @@ struct Decomposed<T> {
     let perpendicular: T
 }
 
-struct Point {
+struct Point: Equatable {
     let x: Float
     let y: Float
     
@@ -27,9 +27,9 @@ struct Point {
     }
 }
 
-struct Vector3D {
+struct Vector3D: Equatable {
     let x: Float
-    let y: Float  
+    let y: Float
     let z: Float
     
     init(_ x: Float, _ y: Float, _ z: Float) {
