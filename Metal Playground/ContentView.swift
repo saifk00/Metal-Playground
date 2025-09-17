@@ -10,7 +10,7 @@ import simd
 import MetalKit
 
 struct ContentView: View {
-    @State private var selectedDemo: Demo = .Plot
+    @State private var selectedDemo: Demo = .SceneBasedPlot
 
     var body: some View {
         VStack {

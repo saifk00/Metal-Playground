@@ -22,17 +22,13 @@ struct SceneBasedPlotDemo: DemoRunner {
     init() {
         // Create a sample plot using the DSL
         plot = Plot {
+            // A plane in 3D space
+            Plane(normal: Vector3D(1, 1, 1), offset: Vector3D(0.1, 0.1, 0.1), size: 1)
+            
             // 3D Coordinate axes
             Line3D(from: Vector3D(-0.8, 0.0, 0.0), to: Vector3D(0.8, 0.0, 0.0))  // X-axis (red conceptually)
             Line3D(from: Vector3D(0.0, -0.8, 0.0), to: Vector3D(0.0, 0.8, 0.0))  // Y-axis (green conceptually)
             Line3D(from: Vector3D(0.0, 0.0, -0.8), to: Vector3D(0.0, 0.0, 0.8))  // Z-axis (blue conceptually)
-
-            // A plane in 3D space
-            Plane(normal: Vector3D(1, 1, 1), offset: Vector3D(0.1, 0.1, 0.1), size: 1)
-
-            // Additional geometry for demonstration
-            Line2D(from: Point(-0.5, -0.5), to: Point(0.5, 0.5))
-            Line2D(from: Point(-0.5, 0.5), to: Point(0.5, -0.5))
         }
     }
 
