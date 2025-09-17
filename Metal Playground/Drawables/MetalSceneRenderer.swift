@@ -12,9 +12,16 @@ import Foundation
 class MetalSceneRenderer {
     private var device: MTLDevice?
     private var pipelineStates: [DrawablePipelineDescriptor: MTLRenderPipelineState] = [:]
+    private var depthStencilState: MTLDepthStencilState?
 
     func initPipeline(from scene: CompiledScene, device: MTLDevice) throws {
         self.device = device
+
+        // Create depth stencil state for proper 3D depth testing
+        let depthDescriptor = MTLDepthStencilDescriptor()
+        depthDescriptor.depthCompareFunction = .less
+        depthDescriptor.isDepthWriteEnabled = true
+        self.depthStencilState = device.makeDepthStencilState(descriptor: depthDescriptor)
 
         // Create pipeline states for each unique descriptor in the scene
         for (_, renderGroup) in scene.renderGroups {
@@ -62,6 +69,11 @@ class MetalSceneRenderer {
     }
 
     func draw(scene: CompiledScene, with encoder: MTLRenderCommandEncoder) {
+        // Set depth stencil state once for all render groups to enable depth testing
+        if let depthStencilState = self.depthStencilState {
+            encoder.setDepthStencilState(depthStencilState)
+        }
+
         for (_, renderGroup) in scene.renderGroups {
             guard let pipelineState = pipelineStates[renderGroup.pipelineDescriptor],
                   let vertexBuffer = renderGroup.vertexBuffer,
@@ -110,6 +122,7 @@ class MetalSceneRenderer {
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.fragmentFunction = fragmentFunction
         pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        pipelineDescriptor.depthAttachmentPixelFormat = .depth32Float
 
         // Set vertex descriptor for PlotDSLVertex
         pipelineDescriptor.vertexDescriptor = PlotDSLVertex.vertexDescriptor()

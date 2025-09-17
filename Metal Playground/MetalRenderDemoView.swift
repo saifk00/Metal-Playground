@@ -33,6 +33,7 @@ struct MetalRenderDemoView : NSViewRepresentable {
         mtkView.delegate = demo
         // this has to match the render pipeline
         mtkView.colorPixelFormat = .bgra8Unorm
+        mtkView.depthStencilPixelFormat = .depth32Float
         mtkView.framebufferOnly = true
         mtkView.isPaused = false
         // Set initial clear color from default demo
