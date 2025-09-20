@@ -36,6 +36,16 @@ struct SceneBasedPlotDemo: DemoRunner {
             Line3D(from: Vector3D(-0.8, 0.0, 0.0), to: Vector3D(0.8, 0.0, 0.0))  // X-axis (red conceptually)
             Line3D(from: Vector3D(0.0, -0.8, 0.0), to: Vector3D(0.0, 0.8, 0.0))  // Y-axis (green conceptually)
             Line3D(from: Vector3D(0.0, 0.0, -0.8), to: Vector3D(0.0, 0.0, 0.8))  // Z-axis (blue conceptually)
+
+            // Spheres at the positive ends of axes
+            Sphere(center: Vector3D(0.8, 0.0, 0.0), radius: 0.05, segments: 16, rings: 8)   // X-axis positive end
+            Sphere(center: Vector3D(0.0, 0.8, 0.0), radius: 0.05, segments: 16, rings: 8)   // Y-axis positive end
+            Sphere(center: Vector3D(0.0, 0.0, 0.8), radius: 0.05, segments: 16, rings: 8)   // Z-axis positive end
+
+            // Cones at the negative ends of axes
+            Cone(base: Vector3D(-0.85, 0.0, 0.0), tip: Vector3D(-0.8, 0.0, 0.0), radius: 0.04, segments: 12)  // X-axis negative end
+            Cone(base: Vector3D(0.0, -0.85, 0.0), tip: Vector3D(0.0, -0.8, 0.0), radius: 0.04, segments: 12)  // Y-axis negative end
+            Cone(base: Vector3D(0.0, 0.0, -0.85), tip: Vector3D(0.0, 0.0, -0.8), radius: 0.04, segments: 12)  // Z-axis negative end
             
             Plane(normal: Vector3D(1, 1, 1), offset: Vector3D(-0.1, -0.1, -0.1), size: 1)
         }

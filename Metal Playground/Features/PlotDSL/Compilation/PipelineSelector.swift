@@ -33,6 +33,12 @@ struct PipelineSelector {
                 fragmentFunction: "plot_fragment_shader"
             )
 
+        case is Sphere, is Cone:
+            return DrawablePipelineDescriptor(
+                vertexFunction: "plot_vertex_shader",
+                fragmentFunction: "plot_fragment_shader"
+            )
+
         case is SceneRootNode:
             return DrawablePipelineDescriptor(
                 vertexFunction: "plot_vertex_shader",
@@ -65,6 +71,12 @@ struct PipelineSelector {
             )
 
         case is Line3D.Type, is Line2D.Type:
+            return DrawablePipelineDescriptor(
+                vertexFunction: "plot_vertex_shader",
+                fragmentFunction: "plot_fragment_shader"
+            )
+
+        case is Sphere.Type, is Cone.Type:
             return DrawablePipelineDescriptor(
                 vertexFunction: "plot_vertex_shader",
                 fragmentFunction: "plot_fragment_shader"

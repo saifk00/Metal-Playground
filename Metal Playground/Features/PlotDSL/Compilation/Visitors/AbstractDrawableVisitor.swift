@@ -18,6 +18,8 @@ protocol AbstractDrawableVisitor {
     mutating func visitSelf(_ planeNode: PlaneNode) -> Result?
     mutating func visitSelf(_ line: Line3D) -> Result?
     mutating func visitSelf(_ line: Line2D) -> Result?
+    mutating func visitSelf(_ sphere: Sphere) -> Result?
+    mutating func visitSelf(_ cone: Cone) -> Result?
     mutating func visitSelf(_ sceneRoot: SceneRootNode) -> Result?
 
     // Tree traversal method - use this for visiting entire trees
@@ -42,6 +44,12 @@ class BaseDrawableVisitor<Result>: AbstractDrawableVisitor {
     }
     func visitSelf(_ line: Line2D) -> Result? {
         return visitSelf(line as AbstractDrawableNode)
+    }
+    func visitSelf(_ sphere: Sphere) -> Result? {
+        return visitSelf(sphere as AbstractDrawableNode)
+    }
+    func visitSelf(_ cone: Cone) -> Result? {
+        return visitSelf(cone as AbstractDrawableNode)
     }
     func visitSelf(_ sceneRoot: SceneRootNode) -> Result? {
         return visitSelf(sceneRoot as AbstractDrawableNode)
