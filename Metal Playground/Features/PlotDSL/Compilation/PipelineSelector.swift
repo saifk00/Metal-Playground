@@ -33,7 +33,7 @@ struct PipelineSelector {
                 fragmentFunction: "plot_fragment_shader"
             )
 
-        case is Sphere, is Cone:
+        case is Sphere, is Cone, is Cylinder, is VectorArrow:
             return DrawablePipelineDescriptor(
                 vertexFunction: "plot_vertex_shader",
                 fragmentFunction: "plot_fragment_shader"
@@ -76,7 +76,7 @@ struct PipelineSelector {
                 fragmentFunction: "plot_fragment_shader"
             )
 
-        case is Sphere.Type, is Cone.Type:
+        case is Sphere.Type, is Cone.Type, is Cylinder.Type, is VectorArrow.Type:
             return DrawablePipelineDescriptor(
                 vertexFunction: "plot_vertex_shader",
                 fragmentFunction: "plot_fragment_shader"

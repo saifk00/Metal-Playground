@@ -46,6 +46,13 @@ struct SceneBasedPlotDemo: DemoRunner {
             Cone(base: Vector3D(-0.85, 0.0, 0.0), tip: Vector3D(-0.8, 0.0, 0.0), radius: 0.04, segments: 12)  // X-axis negative end
             Cone(base: Vector3D(0.0, -0.85, 0.0), tip: Vector3D(0.0, -0.8, 0.0), radius: 0.04, segments: 12)  // Y-axis negative end
             Cone(base: Vector3D(0.0, 0.0, -0.85), tip: Vector3D(0.0, 0.0, -0.8), radius: 0.04, segments: 12)  // Z-axis negative end
+
+            // Cylinder examples
+            Cylinder(base: Vector3D(0.3, 0.3, 0.0), top: Vector3D(0.3, 0.3, 0.3), radius: 0.03, segments: 12)
+
+            // VectorArrow examples - demonstrate vector visualization
+            VectorArrow(origin: Vector3D(-0.3, -0.3, 0.0), vector: Vector3D(0.2, 0.3, 0.4), shaftRadius: 0.015, segments: 12)
+            VectorArrow(origin: Vector3D(0.2, -0.4, 0.2), vector: Vector3D(-0.25, 0.3, -0.15), shaftRadius: 0.02, segments: 12)
             
             Plane(normal: Vector3D(1, 1, 1), offset: Vector3D(-0.1, -0.1, -0.1), size: 1)
         }
