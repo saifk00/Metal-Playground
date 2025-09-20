@@ -7,7 +7,9 @@
 
 import simd
 
-struct PlaneRotationVisitor: AbstractDrawableVisitor {
+// visitor that rotates every plane by a given angle and axis. just here
+// to demonstrate how you might write such a visitor
+class PlaneRotationVisitor: BaseDrawableVisitor<AbstractDrawableNode> {
     typealias Result = AbstractDrawableNode
 
     let angle: Float
@@ -18,15 +20,13 @@ struct PlaneRotationVisitor: AbstractDrawableVisitor {
         self.axis = axis
     }
 
-    // Override specifically for Plane - applies rotation to all planes
-    func visitSelf(_ plane: Plane) -> AbstractDrawableNode? {
+    override func visitSelf(_ plane: Plane) -> AbstractDrawableNode? {
         let rotation = simd_float4x4(simd_quaternion(angle, axis))
         plane.applyTransform(rotation)
         return plane
     }
 
-    // Override specifically for PlaneNode - applies rotation to all plane nodes
-    func visitSelf(_ planeNode: PlaneNode) -> AbstractDrawableNode? {
+    override func visitSelf(_ planeNode: PlaneNode) -> AbstractDrawableNode? {
         let rotation = simd_float4x4(simd_quaternion(angle, axis))
         planeNode.applyTransform(rotation)
         return planeNode

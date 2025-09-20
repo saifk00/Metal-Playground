@@ -10,7 +10,7 @@ import simd
 import MetalKit
 
 struct ContentView: View {
-    @State private var selectedDemo: Demo = .Plot
+    @State private var selectedDemo: Demo = .SceneBasedPlot
 
     var body: some View {
         VStack {
@@ -29,19 +29,6 @@ struct ContentView: View {
     }
 }
 
-enum Demo: String, CaseIterable, Identifiable {
-    var id: Demo { self }
-
-    case Triangle
-    case Quad
-    case Plot
-    case SceneBasedPlot
-}
-
-struct Runnable {
-    let pipeline: MTLRenderPipelineState?
-    let runner: DemoRunner
-}
 
 #Preview {
     ContentView()

@@ -12,9 +12,17 @@ import Foundation
 class MetalSceneRenderer {
     private var device: MTLDevice?
     private var pipelineStates: [DrawablePipelineDescriptor: MTLRenderPipelineState] = [:]
+    private var depthStencilState: MTLDepthStencilState?
 
     func initPipeline(from scene: CompiledScene, device: MTLDevice) throws {
         self.device = device
+
+        // Create depth stencil state for proper 3D depth testing
+        // across _all_ render groups
+        let depthDescriptor = MTLDepthStencilDescriptor()
+        depthDescriptor.depthCompareFunction = .less
+        depthDescriptor.isDepthWriteEnabled = true
+        self.depthStencilState = device.makeDepthStencilState(descriptor: depthDescriptor)
 
         // Create pipeline states for each unique descriptor in the scene
         for (_, renderGroup) in scene.renderGroups {
@@ -33,28 +41,17 @@ class MetalSceneRenderer {
             throw MetalSceneRendererError.deviceNotSet
         }
 
-        // Generate vertex buffers and draw commands for each render group
+        // Create GPU buffers from pre-compiled vertex data
         for (groupID, var renderGroup) in scene.renderGroups {
-            // Collect all nodes that belong to this render group
-            let nodesInGroup = collectNodesForGroup(groupID, from: scene.rootNode)
-
-            // Generate vertices for all nodes in this group
-            let allVertices = generateVertices(for: nodesInGroup)
-
-            // Create GPU buffer
-            if !allVertices.isEmpty {
-                let bufferSize = allVertices.count * MemoryLayout<PlotDSLVertex>.stride
+            // Use vertices that were generated during compilation
+            if let vertices = renderGroup.vertices, !vertices.isEmpty {
+                let bufferSize = vertices.count * MemoryLayout<PlotDSLVertex>.stride
                 renderGroup.vertexBuffer = device.makeBuffer(
-                    bytes: allVertices,
+                    bytes: vertices,
                     length: bufferSize,
                     options: []
                 )
-
-                // Generate draw commands based on vertex data
-                renderGroup.drawCommands = generateDrawCommands(
-                    for: nodesInGroup,
-                    vertices: allVertices
-                )
+                renderGroup.vertexBuffer?.label = "RenderGroup-\(groupID)"
             }
 
             scene.renderGroups[groupID] = renderGroup
@@ -62,6 +59,11 @@ class MetalSceneRenderer {
     }
 
     func draw(scene: CompiledScene, with encoder: MTLRenderCommandEncoder) {
+        // Set depth stencil state once for all render groups to enable depth testing
+        if let depthStencilState = self.depthStencilState {
+            encoder.setDepthStencilState(depthStencilState)
+        }
+
         for (_, renderGroup) in scene.renderGroups {
             guard let pipelineState = pipelineStates[renderGroup.pipelineDescriptor],
                   let vertexBuffer = renderGroup.vertexBuffer,
@@ -82,11 +84,6 @@ class MetalSceneRenderer {
                 )
             }
         }
-    }
-
-    private func collectNodesForGroup(_ groupID: UUID, from rootNode: any AbstractDrawableNode) -> [any AbstractDrawableNode] {
-        let allNodes = DrawableCollectorVisitor.collectDrawables(from: rootNode)
-        return allNodes.filter { $0.renderGroupID == groupID }
     }
 
     private func createPipelineState(
@@ -110,65 +107,12 @@ class MetalSceneRenderer {
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.fragmentFunction = fragmentFunction
         pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        pipelineDescriptor.depthAttachmentPixelFormat = .depth32Float
 
         // Set vertex descriptor for PlotDSLVertex
         pipelineDescriptor.vertexDescriptor = PlotDSLVertex.vertexDescriptor()
 
         return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-    }
-
-    private func generateVertices(for nodes: [any AbstractDrawableNode]) -> [PlotDSLVertex] {
-        // Stage 1: Generate and store base vertices using visitor pattern
-        VertexGeneratorVisitor.generateVertices(for: nodes)
-
-        // Stage 2: Apply world transforms to stored vertices using visitor pattern
-        TransformApplierVisitor.applyTransforms(to: nodes)
-
-        // Stage 3: Collect the transformed vertices from all nodes
-        var allTransformedVertices: [PlotDSLVertex] = []
-        for node in nodes {
-            if let vertices = node.getVertices() {
-                allTransformedVertices.append(contentsOf: vertices)
-            }
-        }
-
-        return allTransformedVertices
-    }
-
-    private func generateDrawCommands(
-        for nodes: [any AbstractDrawableNode],
-        vertices: [PlotDSLVertex]
-    ) -> [DrawCommand] {
-        var commands: [DrawCommand] = []
-        var vertexOffset = 0
-
-        for node in nodes {
-            if let drawableNode = node as? any DrawableNode {
-                let vertexCount = drawableNode.vertexCount()
-
-                if vertexCount > 0 {
-                    // Choose primitive type based on node type
-                    let primitiveType: MTLPrimitiveType
-                    switch node {
-                    case is Line2D, is Line3D:
-                        primitiveType = .line
-                    case is Plane, is PlaneNode:
-                        primitiveType = .triangle
-                    default:
-                        primitiveType = .triangle
-                    }
-
-                    commands.append(DrawCommand(
-                        primitiveType: primitiveType,
-                        vertexStart: vertexOffset,
-                        vertexCount: vertexCount
-                    ))
-                    vertexOffset += vertexCount
-                }
-            }
-        }
-
-        return commands
     }
 }
 

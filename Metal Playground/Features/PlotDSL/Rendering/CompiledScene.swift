@@ -17,9 +17,12 @@ struct RenderGroup {
     let groupID: UUID
     let pipelineDescriptor: DrawablePipelineDescriptor
 
+    // CPU-generated data (set during compilation)
+    var vertices: [PlotDSLVertex]?
+    var drawCommands: [DrawCommand]?
+
     // GPU resources (set during buffer initialization)
     var vertexBuffer: MTLBuffer?
-    var drawCommands: [DrawCommand]?
 
     init(groupID: UUID, pipelineDescriptor: DrawablePipelineDescriptor) {
         self.groupID = groupID
