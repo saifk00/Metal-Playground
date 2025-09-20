@@ -17,22 +17,26 @@ struct RenderGroupAssignmentVisitor: AbstractDrawableVisitor {
     init() {}
 
     mutating func visitSelf(_ plane: Plane) -> Void? {
-        assignRenderGroup(to: plane, pipeline: selectPipeline(for: plane))
+        let pipeline = PipelineSelector.selectPipeline(for: plane)
+        assignRenderGroup(to: plane, pipeline: pipeline)
         return nil
     }
 
     mutating func visitSelf(_ planeNode: PlaneNode) -> Void? {
-        assignRenderGroup(to: planeNode, pipeline: selectPipeline(for: planeNode))
+        let pipeline = PipelineSelector.selectPipeline(for: planeNode)
+        assignRenderGroup(to: planeNode, pipeline: pipeline)
         return nil
     }
 
     mutating func visitSelf(_ line: Line3D) -> Void? {
-        assignRenderGroup(to: line, pipeline: selectPipeline(for: line))
+        let pipeline = PipelineSelector.selectPipeline(for: line)
+        assignRenderGroup(to: line, pipeline: pipeline)
         return nil
     }
 
     mutating func visitSelf(_ line: Line2D) -> Void? {
-        assignRenderGroup(to: line, pipeline: selectPipeline(for: line))
+        let pipeline = PipelineSelector.selectPipeline(for: line)
+        assignRenderGroup(to: line, pipeline: pipeline)
         return nil
     }
 
@@ -54,32 +58,6 @@ struct RenderGroupAssignmentVisitor: AbstractDrawableVisitor {
 
         // Assign the render group ID to the node
         node.renderGroupID = groupID
-    }
-
-    private func selectPipeline(for node: any AbstractDrawableNode) -> DrawablePipelineDescriptor {
-        // Hardcoded pipeline selection logic
-        switch node {
-        case is Plane:
-            return DrawablePipelineDescriptor(
-                vertexFunction: "plot_vertex_shader",
-                fragmentFunction: "plot_fragment_shader"
-            )
-        case is PlaneNode:
-            return DrawablePipelineDescriptor(
-                vertexFunction: "plot_vertex_shader",
-                fragmentFunction: "plot_fragment_shader"
-            )
-        case is Line3D, is Line2D:
-            return DrawablePipelineDescriptor(
-                vertexFunction: "plot_vertex_shader",
-                fragmentFunction: "plot_fragment_shader"
-            )
-        default:
-            return DrawablePipelineDescriptor(
-                vertexFunction: "default_vertex",
-                fragmentFunction: "default_fragment"
-            )
-        }
     }
 
     // Static convenience methods

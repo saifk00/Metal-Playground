@@ -29,19 +29,6 @@ struct ContentView: View {
     }
 }
 
-enum Demo: String, CaseIterable, Identifiable {
-    var id: Demo { self }
-
-    case Triangle
-    case Quad
-    case Plot
-    case SceneBasedPlot
-}
-
-struct Runnable {
-    let pipeline: MTLRenderPipelineState?
-    let runner: DemoRunner
-}
 
 #Preview {
     ContentView()
