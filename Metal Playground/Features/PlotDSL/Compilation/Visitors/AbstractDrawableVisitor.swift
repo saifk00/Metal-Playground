@@ -8,6 +8,7 @@
 import Foundation
 import simd
 
+// a visitor for AbstractDrawableNodes
 protocol AbstractDrawableVisitor {
     associatedtype Result
     mutating func visitSelf(_ obj: AbstractDrawableNode) -> Result?

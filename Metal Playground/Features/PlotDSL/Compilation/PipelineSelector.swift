@@ -33,6 +33,12 @@ struct PipelineSelector {
                 fragmentFunction: "plot_fragment_shader"
             )
 
+        case is SceneRootNode:
+            return DrawablePipelineDescriptor(
+                vertexFunction: "plot_vertex_shader",
+                fragmentFunction: "plot_fragment_shader"
+            )
+
         default:
             // Fallback pipeline for unknown node types
             return DrawablePipelineDescriptor(
@@ -59,6 +65,12 @@ struct PipelineSelector {
             )
 
         case is Line3D.Type, is Line2D.Type:
+            return DrawablePipelineDescriptor(
+                vertexFunction: "plot_vertex_shader",
+                fragmentFunction: "plot_fragment_shader"
+            )
+
+        case is SceneRootNode.Type:
             return DrawablePipelineDescriptor(
                 vertexFunction: "plot_vertex_shader",
                 fragmentFunction: "plot_fragment_shader"

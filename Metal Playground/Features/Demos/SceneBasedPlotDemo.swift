@@ -36,6 +36,8 @@ struct SceneBasedPlotDemo: DemoRunner {
             Line3D(from: Vector3D(-0.8, 0.0, 0.0), to: Vector3D(0.8, 0.0, 0.0))  // X-axis (red conceptually)
             Line3D(from: Vector3D(0.0, -0.8, 0.0), to: Vector3D(0.0, 0.8, 0.0))  // Y-axis (green conceptually)
             Line3D(from: Vector3D(0.0, 0.0, -0.8), to: Vector3D(0.0, 0.0, 0.8))  // Z-axis (blue conceptually)
+            
+            Plane(normal: Vector3D(1, 1, 1), offset: Vector3D(-0.1, -0.1, -0.1), size: 1)
         }
     }
 

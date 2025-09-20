@@ -7,6 +7,8 @@
 
 import simd
 
+// visitor that rotates every plane by a given angle and axis. just here
+// to demonstrate how you might write such a visitor
 class PlaneRotationVisitor: BaseDrawableVisitor<AbstractDrawableNode> {
     typealias Result = AbstractDrawableNode
 

@@ -7,6 +7,7 @@
 
 import Foundation
 
+// visitor that collects all the nodes in the scene as a pre-ordered list
 class DrawableCollectorVisitor: BaseDrawableVisitor<[any AbstractDrawableNode]> {
     typealias Result = [any AbstractDrawableNode]
 

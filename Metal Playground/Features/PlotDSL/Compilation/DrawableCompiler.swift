@@ -83,8 +83,6 @@ class DrawableCompiler {
         return updatedGroups
     }
 
-    // MARK: Helper Methods
-
     private func collectNodesForGroup(_ groupID: UUID, from rootNode: any AbstractDrawableNode) -> [any AbstractDrawableNode] {
         // Collect all drawable nodes from the scene
         let allNodes = DrawableCollectorVisitor.collectDrawables(from: rootNode)
