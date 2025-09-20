@@ -18,6 +18,7 @@ class MetalSceneRenderer {
         self.device = device
 
         // Create depth stencil state for proper 3D depth testing
+        // across _all_ render groups
         let depthDescriptor = MTLDepthStencilDescriptor()
         depthDescriptor.depthCompareFunction = .less
         depthDescriptor.isDepthWriteEnabled = true

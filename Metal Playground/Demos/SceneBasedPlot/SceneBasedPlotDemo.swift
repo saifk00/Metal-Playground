@@ -9,6 +9,13 @@ import Foundation
 import simd
 import MetalKit
 
+/**
+ A scene based plot invokes the compiler to take the graph of abstract drawable nodes and perform the following high level steps:
+ 1. Perform any unwrapping to 'basic' drawables, including transforms
+ 2. Create RenderGroups by assigning a render group ID to each drawable object. objects in a render group share a vertex format
+ 3. Generate vertices according to the render group and coalesce them into buffers, and build up a set of commands that will be used to render the group
+ 4. When asked to draw into an encoder, use the commands built up in step 3 to render each object (using a common z-buffer for depth testing)
+ */
 struct SceneBasedPlotDemo: DemoRunner {
     private var plot: Plot
 
