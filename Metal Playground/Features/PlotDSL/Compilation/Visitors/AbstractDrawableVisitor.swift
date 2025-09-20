@@ -10,6 +10,7 @@ import simd
 
 protocol AbstractDrawableVisitor {
     associatedtype Result
+    mutating func visitSelf(_ obj: AbstractDrawableNode) -> Result?
 
     // Node-specific visit methods - implement these for custom behavior
     mutating func visitSelf(_ plane: Plane) -> Result?
@@ -23,22 +24,26 @@ protocol AbstractDrawableVisitor {
 }
 
 // Base class implementation for visitors
+// the default implementation is to visit yourself as your base class
 class BaseDrawableVisitor<Result>: AbstractDrawableVisitor {
-    // Default no-op implementations for visitSelf methods
-    func visitSelf(_ plane: Plane) -> Result? {
+    func visitSelf(_ obj: AbstractDrawableNode) -> Result? {
         return nil
+    }
+    
+    func visitSelf(_ plane: Plane) -> Result? {
+        return visitSelf(plane as AbstractDrawableNode)
     }
     func visitSelf(_ planeNode: PlaneNode) -> Result? {
-        return nil
+        return visitSelf(planeNode as AbstractDrawableNode)
     }
     func visitSelf(_ line: Line3D) -> Result? {
-        return nil
+        return visitSelf(line as AbstractDrawableNode)
     }
     func visitSelf(_ line: Line2D) -> Result? {
-        return nil
+        return visitSelf(line as AbstractDrawableNode)
     }
     func visitSelf(_ sceneRoot: SceneRootNode) -> Result? {
-        return nil
+        return visitSelf(sceneRoot as AbstractDrawableNode)
     }
 
     // Default tree traversal implementation - visits children first, then self
@@ -50,37 +55,6 @@ class BaseDrawableVisitor<Result>: AbstractDrawableVisitor {
         }
         var mutableSelf = self
         let selfResult = node.accept(&mutableSelf)
-        return selfResult
-    }
-}
-
-// Extension for protocol conformance with structs (for non-mutating visitors)
-extension AbstractDrawableVisitor {
-    // Default no-op implementations for visitSelf methods
-    mutating func visitSelf(_ plane: Plane) -> Result? {
-        return nil
-    }
-    mutating func visitSelf(_ planeNode: PlaneNode) -> Result? {
-        return nil
-    }
-    mutating func visitSelf(_ line: Line3D) -> Result? {
-        return nil
-    }
-    mutating func visitSelf(_ line: Line2D) -> Result? {
-        return nil
-    }
-    mutating func visitSelf(_ sceneRoot: SceneRootNode) -> Result? {
-        return nil
-    }
-
-    // Default tree traversal implementation - visits children first, then self
-    // Use visitor.visit(node) for full tree traversal
-    // Use node.accept(visitor) for single node visitation only
-    mutating func visit(_ node: any AbstractDrawableNode) -> Result? {
-        for child in node.children {
-            _ = visit(child)
-        }
-        let selfResult = node.accept(&self)
         return selfResult
     }
 }

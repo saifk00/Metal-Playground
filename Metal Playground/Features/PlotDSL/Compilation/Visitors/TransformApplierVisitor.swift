@@ -8,44 +8,13 @@
 import Foundation
 import simd
 
-struct TransformApplierVisitor: AbstractDrawableVisitor {
+class TransformApplierVisitor: BaseDrawableVisitor<Void> {
     typealias Result = Void
 
-    func visitSelf(_ plane: Plane) -> Void? {
-        let transform = plane.getWorldTransform()
-        plane.applyVertexTransform(transform)
+    override func visitSelf(_ node: any AbstractDrawableNode) -> Void? {
+        let transform = node.getWorldTransform()
+        node.applyVertexTransform(transform)
         return nil
-    }
-
-    func visitSelf(_ planeNode: PlaneNode) -> Void? {
-        let transform = planeNode.getWorldTransform()
-        planeNode.applyVertexTransform(transform)
-        return nil
-    }
-
-    func visitSelf(_ line: Line3D) -> Void? {
-        let transform = line.getWorldTransform()
-        line.applyVertexTransform(transform)
-        return nil
-    }
-
-    func visitSelf(_ line: Line2D) -> Void? {
-        let transform = line.getWorldTransform()
-        line.applyVertexTransform(transform)
-        return nil
-    }
-
-    // Apply world transforms to stored vertices in all nodes
-    mutating func applyTransformsTo(_ nodes: [any AbstractDrawableNode]) {
-        for node in nodes {
-            let _ = node.accept(&self)
-        }
-    }
-
-    // Static convenience methods
-    static func applyTransforms(to nodes: [any AbstractDrawableNode]) {
-        var applier = TransformApplierVisitor()
-        applier.applyTransformsTo(nodes)
     }
 
     static func applyTransforms(to node: any AbstractDrawableNode) {
